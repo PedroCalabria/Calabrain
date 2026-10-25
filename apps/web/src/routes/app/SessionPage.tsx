@@ -1,11 +1,12 @@
 import { limits } from "@calabrain/shared";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { ChevronRight, NotebookPen, Video } from "lucide-react";
+import { ChevronRight, Video } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { NameDialog } from "../../components/dialogs.tsx";
 import { Menu, useToast } from "../../components/overlay.tsx";
 import { DocumentsPanel } from "../../components/documents.tsx";
+import { NotesPanel } from "../../components/notes.tsx";
 import { mutations, refreshTree, sessionQuery, treeQuery } from "../../lib/queries.ts";
 
 const limitOptions = [5, 10, 15, 20, 25, 30].filter((m) => m <= limits.recordingMaxMinutes);
@@ -109,22 +110,19 @@ export function SessionPage() {
         />
       </div>
 
-      <ul className="mt-6 grid gap-4 md:grid-cols-2">
-        {[
-          { icon: NotebookPen, tone: "bg-amber-tint text-amber", title: "Notes", text: "Write and version your notes here, after documents." },
-          { icon: Video, tone: "bg-brand-tint text-brand", title: "Recordings", text: "Upload your explanation and rewatch it, after notes." },
-        ].map(({ icon: Icon, tone, title, text }, i) => (
-          <li key={title} className="panel rise flex items-start gap-4 p-5" style={{ "--i": i + 2 } as CSSProperties}>
-            <span className={`grid size-11 flex-none place-items-center rounded-full ${tone}`}>
-              <Icon size={20} strokeWidth={1.75} aria-hidden />
-            </span>
-            <span>
-              <span className="block text-[13px] leading-[18px] font-medium">{title}</span>
-              <span className="mt-1 block text-xs leading-4 text-ink-muted">{text}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
+      <div className="rise mt-6" style={{ "--i": 2 } as CSSProperties}>
+        <NotesPanel sessionId={session.id} />
+      </div>
+
+      <section className="panel rise mt-6 flex items-start gap-4 p-5" style={{ "--i": 3 } as CSSProperties}>
+        <span className="grid size-11 flex-none place-items-center rounded-full bg-brand-tint text-brand">
+          <Video size={20} strokeWidth={1.75} aria-hidden />
+        </span>
+        <span>
+          <span className="block text-[13px] leading-[18px] font-medium">Recordings</span>
+          <span className="mt-1 block text-xs leading-4 text-ink-muted">Upload your explanation and rewatch it next to your notes. Arrives in the next update.</span>
+        </span>
+      </section>
 
       <NameDialog
         open={renaming}

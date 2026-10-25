@@ -8,10 +8,12 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { ApiRequestError } from "./lib/api.ts";
-import { documentQuery, sessionQuery, subjectsQuery, trashQuery, treeQuery } from "./lib/queries.ts";
+import { documentQuery, noteQuery, notesQuery, sessionNotesQuery, sessionQuery, subjectsQuery, trashQuery, treeQuery } from "./lib/queries.ts";
 import { meQuery } from "./lib/session.ts";
 import { AppLayout } from "./routes/app/AppLayout.tsx";
 import { DocumentPage } from "./routes/app/DocumentPage.tsx";
+import { NotePage } from "./routes/app/NotePage.tsx";
+import { Notes } from "./routes/app/Notes.tsx";
 import { Overview } from "./routes/app/Overview.tsx";
 import { SessionPage } from "./routes/app/SessionPage.tsx";
 import { Settings } from "./routes/app/Settings.tsx";
@@ -117,7 +119,10 @@ const sessionRoute = createRoute({
   loader: ({ context, params }) =>
     load(async () => {
       const session = await context.queryClient.ensureQueryData(sessionQuery(params.sessionId));
-      await context.queryClient.ensureQueryData(treeQuery(session.subjectId));
+      await Promise.all([
+        context.queryClient.ensureQueryData(treeQuery(session.subjectId)),
+        context.queryClient.ensureQueryData(sessionNotesQuery(session.id)),
+      ]);
     }),
   component: SessionPage,
 });
@@ -128,6 +133,22 @@ const documentRoute = createRoute({
     Number(s.page) >= 1 ? { page: Math.floor(Number(s.page)) } : {},
   loader: ({ context, params }) => load(() => context.queryClient.ensureQueryData(documentQuery(params.documentId))),
   component: DocumentPage,
+});
+const noteRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/notes/$noteId",
+  loader: ({ context, params }) =>
+    load(async () => {
+      const note = await context.queryClient.ensureQueryData(noteQuery(params.noteId));
+      await context.queryClient.ensureQueryData(sessionQuery(note.sessionId));
+    }),
+  component: NotePage,
+});
+const notesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/notes",
+  loader: ({ context }) => context.queryClient.ensureQueryData(notesQuery),
+  component: Notes,
 });
 const trashRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -150,8 +171,9 @@ const routeTree = rootRoute.addChildren([
     subjectRoute,
     sessionRoute,
     documentRoute,
+    noteRoute,
+    notesRoute,
     trashRoute,
-    upcoming("/notes", "Notes", "Notes arrive after subjects and documents: an editor with versions and imports."),
     upcoming("/recordings", "Recordings", "Upload your explanations and rewatch them here, after notes."),
     upcoming("/calendar", "Calendar", "Your study calendar comes in a later phase."),
   ]),

@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./schema": "./src/schema.ts",
     "./migrate": "./src/migrate.ts",
-    "./trash": "./src/trash.ts"
+    "./trash": "./src/trash.ts",
+    "./notes": "./src/notes.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
@@ -16,7 +17,8 @@
   },
   "dependencies": {
     "drizzle-orm": "0.45.4",
-    "pg": "8.23.1"
+    "pg": "8.23.1",
+    "@calabrain/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "22.20.5",

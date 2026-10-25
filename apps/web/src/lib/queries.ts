@@ -1,4 +1,10 @@
 import type {
+  CreateNoteInput,
+  DocNode,
+  NoteDetail,
+  NoteSummary,
+  NoteVersionDetail,
+  NoteVersionInfo,
   CreateDocumentInput,
   CreateFolderInput,
   DocumentDetail,
@@ -44,6 +50,37 @@ export const documentPagesQuery = (id: string, from: number, to: number) =>
     queryFn: () => api<{ pages: DocumentPage[] }>(`/documents/${id}/pages?from=${from}&to=${to}`),
   });
 
+export const notesQuery = queryOptions({
+  queryKey: ["notes", "recent"],
+  queryFn: () => api<NoteSummary[]>("/notes"),
+});
+
+export const sessionNotesQuery = (sessionId: string) =>
+  queryOptions({
+    queryKey: ["notes", "session", sessionId],
+    queryFn: () => api<NoteSummary[]>(`/sessions/${sessionId}/notes`),
+    refetchInterval: (q) => (q.state.data?.some((n) => n.status === "processing") ? 2000 : false),
+  });
+
+export const noteQuery = (noteId: string) =>
+  queryOptions({
+    queryKey: ["notes", noteId],
+    queryFn: () => api<NoteDetail>(`/notes/${noteId}`),
+    // Each editor keeps its own state; don't refetch under it.
+    staleTime: Infinity,
+    refetchInterval: (q) => (q.state.data?.status === "processing" ? 2000 : false),
+  });
+
+export const noteVersionsQuery = (noteId: string) =>
+  queryOptions({ queryKey: ["notes", noteId, "versions"], queryFn: () => api<NoteVersionInfo[]>(`/notes/${noteId}/versions`) });
+
+export const noteVersionQuery = (noteId: string, v: number) =>
+  queryOptions({
+    queryKey: ["notes", noteId, "versions", v],
+    queryFn: () => api<NoteVersionDetail>(`/notes/${noteId}/versions/${v}`),
+    staleTime: Infinity,
+  });
+
 export const sessionQuery = (sessionId: string) =>
   queryOptions({
     queryKey: ["sessions", sessionId],
@@ -76,6 +113,15 @@ export const mutations = {
   documentFileUrl: (id: string) => api<{ url: string }>(`/documents/${id}/file`),
   splitDocument: (id: string, input: SplitInput) =>
     api<{ created: { sessionId: string; documentId: string }[] }>(`/documents/${id}/split`, json("POST", input)),
+  createNote: (sessionId: string, input: CreateNoteInput) => api<NoteDetail>(`/sessions/${sessionId}/notes`, json("POST", input)),
+  renameNote: (id: string, title: string) => api<NoteDetail>(`/notes/${id}`, json("PATCH", { title })),
+  moveNote: (id: string, position: number) => api<NoteDetail>(`/notes/${id}`, json("PATCH", { position })),
+  deleteNote: (id: string) => api<void>(`/notes/${id}`, json("DELETE")),
+  saveDraft: (id: string, content: DocNode, baseVersion: number) =>
+    api<{ savedAt: string; version: number }>(`/notes/${id}/draft`, json("PUT", { content, baseVersion })),
+  createVersion: (id: string, baseVersion: number, content?: DocNode, force?: boolean) =>
+    api<{ version: number; created: boolean }>(`/notes/${id}/versions`, json("POST", { baseVersion, content, force })),
+  restoreVersion: (id: string, v: number) => api<{ version: number }>(`/notes/${id}/versions/${v}/restore`, json("POST")),
   restore: (type: TrashType, id: string) => api<void>(`/trash/${type}/${id}/restore`, json("POST")),
   erase: (type: TrashType, id: string) => api<void>(`/trash/${type}/${id}`, json("DELETE")),
 };
@@ -87,4 +133,5 @@ export const refreshTree = (qc: QueryClient) =>
     qc.invalidateQueries({ queryKey: ["sessions"] }),
     qc.invalidateQueries({ queryKey: ["trash"] }),
     qc.invalidateQueries({ queryKey: ["documents"] }),
+    qc.invalidateQueries({ queryKey: ["notes"] }),
   ]);

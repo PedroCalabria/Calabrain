@@ -246,6 +246,9 @@ export const notes = pgTable(
     }),
     draftJson: jsonb("draft_json"),
     draftUpdatedAt: timestamp("draft_updated_at", { withTimezone: true }),
+    /** "processing" while an imported file is converted (RF11); otherwise "ready". */
+    status: processingStatus("status").notNull().default("ready"),
+    failureReason: text("failure_reason"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     deletedAt: deletedAt(),
