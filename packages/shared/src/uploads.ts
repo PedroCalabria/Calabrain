@@ -159,6 +159,7 @@ export const jobs = {
   importNote: "import-note",
   processRecording: "process-recording",
   purgeTrash: "purge-trash",
+  commitDrafts: "commit-idle-drafts",
 } as const;
 
 export interface ProcessDocumentJob {
@@ -166,4 +167,8 @@ export interface ProcessDocumentJob {
 }
 export interface SplitDocumentJob {
   documentId: string;
+}
+export interface ImportNoteJob {
+  noteId: string;
+  uploadId: string;
 }

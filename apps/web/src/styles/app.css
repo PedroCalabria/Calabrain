@@ -349,3 +349,113 @@
     transition: none !important;
   }
 }
+
+/* Note editor content (RF09) */
+.note-content {
+  outline: none;
+  min-height: 240px;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--ink);
+  max-width: 72ch;
+}
+.note-content > * + * {
+  margin-top: 8px;
+}
+.note-content h1 {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 500;
+  margin-top: 20px;
+}
+.note-content h2 {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 500;
+  margin-top: 18px;
+}
+.note-content h3 {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+  margin-top: 14px;
+}
+.note-content > :first-child {
+  margin-top: 0;
+}
+.note-content ul,
+.note-content ol {
+  padding-left: 22px;
+}
+.note-content ul {
+  list-style: disc;
+}
+.note-content ol {
+  list-style: decimal;
+}
+.note-content li::marker {
+  color: var(--ink-muted);
+}
+.note-content li > p {
+  margin: 0;
+}
+.note-content a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.note-content strong {
+  font-weight: 600;
+}
+.note-content blockquote {
+  border-left: 2px solid var(--border-strong);
+  padding-left: 14px;
+  color: var(--ink-muted);
+}
+.note-content pre {
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font: 500 12px/18px var(--font-mono);
+  white-space: pre-wrap;
+}
+.note-content code {
+  font: 500 12px/18px var(--font-mono);
+  background: var(--surface-sunken);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.note-content pre code {
+  background: none;
+  padding: 0;
+}
+.note-content table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  margin: 12px 0;
+}
+.note-content td,
+.note-content th {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  vertical-align: top;
+  text-align: left;
+}
+.note-content th {
+  background: var(--surface-sunken);
+  font-weight: 500;
+}
+.note-content .selectedCell {
+  background: var(--brand-tint);
+}
+.note-content p.is-editor-empty:first-child::before {
+  content: "Start writing…";
+  color: var(--ink-subtle);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.tableWrapper {
+  overflow-x: auto;
+}
