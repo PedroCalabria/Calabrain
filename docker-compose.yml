@@ -1,0 +1,53 @@
+# Local development services. The apps themselves run on the host with `pnpm dev`.
+# Production runs the same Postgres image; files go to Cloudflare R2 instead of MinIO.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: calabrain
+      POSTGRES_PASSWORD: calabrain
+      POSTGRES_DB: calabrain
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calabrain"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # S3-compatible stand-in for Cloudflare R2.
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: calabrain
+      MINIO_ROOT_PASSWORD: calabrain-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 calabrain calabrain-secret; do sleep 1; done;
+      mc mb --ignore-existing local/calabrain-dev;
+      mc anonymous set none local/calabrain-dev;
+      "
+
+  # Catches password-reset e-mails. Inbox at http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  pgdata:
+  miniodata:

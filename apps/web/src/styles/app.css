@@ -1,0 +1,300 @@
+@import "@fontsource/outfit/400.css";
+@import "@fontsource/outfit/500.css";
+@import "@fontsource/outfit/600.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "tailwindcss";
+
+/*
+ * Calabrain tokens — from the "Plataforma de Estudos" design system (tokens.json).
+ * Light first; dark follows the system preference.
+ */
+:root {
+  --canvas: #f8f2e9;
+  --surface: #fcf8f2;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f2eadf;
+  --border: #ece3d6;
+  --border-strong: #d9cebf;
+  --control-border: #958877;
+  --ink: #1b1714;
+  --ink-muted: #6b635b;
+  --ink-subtle: #9a9187;
+  --brand: #c2413b;
+  --brand-hover: #a9342f;
+  --brand-strong: #a9342f;
+  --brand-tint: #fbe6e3;
+  --on-brand: #ffffff;
+  --nav-active: #1b1714;
+  --on-nav-active: #ffffff;
+  --amber: #a8650a;
+  --amber-tint: #fcf0dc;
+  --indigo: #5459c9;
+  --indigo-tint: #ebecfb;
+  --success: #2b7650;
+  --success-tint: #e2f2e9;
+  --wrong: #b3261e;
+  --wrong-tint: #fbe4e1;
+  --shadow-card: 0 1px 2px rgba(27, 23, 20, 0.04), 0 6px 18px rgba(27, 23, 20, 0.04);
+  --shadow-pop: 0 8px 24px rgba(27, 23, 20, 0.18);
+
+  /* Motion (design system "Movimento") */
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-soft: cubic-bezier(0.44, 0, 0.56, 1);
+  --t-enter: 500ms;
+  --t-hover: 250ms;
+  --stagger: 100ms;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #15120e;
+    --surface: #1c1814;
+    --surface-raised: #241f1a;
+    --surface-sunken: #2d2721;
+    --border: #39322b;
+    --border-strong: #4e453c;
+    --control-border: #8a7f72;
+    --ink: #f5efe7;
+    --ink-muted: #ada398;
+    --ink-subtle: #7e756b;
+    --brand: #ee746c;
+    --brand-hover: #f49a93;
+    --brand-strong: #f49a93;
+    --brand-tint: #3a211e;
+    --on-brand: #1b1714;
+    --nav-active: #f5efe7;
+    --on-nav-active: #1b1714;
+    --amber: #edb457;
+    --amber-tint: #3a2c14;
+    --indigo: #a3a6f5;
+    --indigo-tint: #24254a;
+    --success: #74d3a0;
+    --success-tint: #173225;
+    --wrong: #ff8f85;
+    --wrong-tint: #3e1c19;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --font-sans: "Outfit", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-control-border: var(--control-border);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-tint: var(--brand-tint);
+  --color-on-brand: var(--on-brand);
+  --color-nav-active: var(--nav-active);
+  --color-on-nav-active: var(--on-nav-active);
+  --color-amber: var(--amber);
+  --color-amber-tint: var(--amber-tint);
+  --color-indigo: var(--indigo);
+  --color-indigo-tint: var(--indigo-tint);
+  --color-success: var(--success);
+  --color-success-tint: var(--success-tint);
+  --color-wrong: var(--wrong);
+  --color-wrong-tint: var(--wrong-tint);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 24px;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 22px;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+  button {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .wordmark {
+    font: 500 20px/24px var(--font-sans);
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .wordmark i {
+    font-style: normal;
+    color: var(--brand);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 20px;
+    border-radius: var(--radius-md);
+    font: 500 14px/18px var(--font-sans);
+    white-space: nowrap;
+    transition:
+      background-color var(--t-hover) var(--ease-soft),
+      color var(--t-hover) var(--ease-soft),
+      box-shadow var(--t-hover) var(--ease-soft);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--brand);
+    color: var(--on-brand);
+  }
+  .btn-primary:not(:disabled):hover {
+    background: var(--brand-hover);
+  }
+  .btn-secondary {
+    background: var(--surface-raised);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--border), var(--shadow-card);
+  }
+  .btn-secondary:not(:disabled):hover {
+    background: var(--surface-sunken);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink);
+    height: 32px;
+    padding: 0 12px;
+  }
+  .btn-ghost:hover {
+    background: var(--surface-sunken);
+  }
+  .btn-bare {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: transparent;
+    color: var(--ink);
+  }
+  .btn-bare:hover {
+    background: var(--surface-sunken);
+  }
+
+  .field-input {
+    height: 40px;
+    width: 100%;
+    padding: 0 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--control-border);
+    background: var(--surface-raised);
+    color: var(--ink);
+    font: 400 14px/20px var(--font-sans);
+    transition: border-color var(--t-hover) var(--ease-soft);
+  }
+  .field-input::placeholder {
+    color: var(--ink-subtle);
+  }
+  .field-input[aria-invalid="true"] {
+    border-color: var(--wrong);
+  }
+
+  .card {
+    background: var(--surface-raised);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 18px;
+    text-decoration: none;
+    transition:
+      background-color var(--t-hover) var(--ease-soft),
+      color var(--t-hover) var(--ease-soft);
+  }
+  .nav-item:hover {
+    background: var(--surface-sunken);
+  }
+  .nav-item[data-status="active"],
+  .nav-item[aria-current="page"] {
+    background: var(--nav-active);
+    color: var(--on-nav-active);
+    font-weight: 500;
+  }
+
+  .rise {
+    animation: rise var(--t-enter) var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * var(--stagger));
+  }
+  .fade {
+    animation: fade var(--t-enter) var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * var(--stagger));
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
