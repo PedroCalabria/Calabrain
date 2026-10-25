@@ -12,7 +12,9 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { connectLive } from "../../lib/live.ts";
 import { Wordmark } from "../../components/ui.tsx";
 
 interface NavEntry {
@@ -64,6 +66,8 @@ export function AppLayout() {
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   useEffect(() => setOpen(false), [pathname]);
+  const qc = useQueryClient();
+  useEffect(() => connectLive(qc), [qc]);
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[240px_1fr]">

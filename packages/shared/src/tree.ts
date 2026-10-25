@@ -90,6 +90,8 @@ export interface SessionNode {
   noteCount: number;
   attemptCount: number;
   documentCount: number;
+  /** Total length of this session's ready recordings, in seconds. */
+  recordedSeconds: number;
   updatedAt: string;
 }
 

@@ -26,6 +26,7 @@ import type {
 } from "@calabrain/shared";
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import { api } from "./api.ts";
+import { pollUnlessLive } from "./live.ts";
 
 export const subjectsQuery = queryOptions({
   queryKey: ["subjects"],
@@ -36,15 +37,15 @@ export const treeQuery = (subjectId: string) =>
   queryOptions({
     queryKey: ["subjects", subjectId, "tree"],
     queryFn: () => api<SubjectTree>(`/subjects/${subjectId}/tree`),
-    // Poll while a document is processing (live updates arrive with server events later).
-    refetchInterval: (q) => (q.state.data?.documents.some((d) => d.status === "processing") ? 2000 : false),
+    // Live updates come over server events; polling is the fallback while the stream is down.
+    refetchInterval: (q) => (q.state.data?.documents.some((d) => d.status === "processing") ? pollUnlessLive(2000) : false),
   });
 
 export const documentQuery = (id: string) =>
   queryOptions({
     queryKey: ["documents", id],
     queryFn: () => api<DocumentDetail>(`/documents/${id}`),
-    refetchInterval: (q) => (q.state.data?.status === "processing" ? 2000 : false),
+    refetchInterval: (q) => (q.state.data?.status === "processing" ? pollUnlessLive(2000) : false),
   });
 
 export const documentPagesQuery = (id: string, from: number, to: number) =>
@@ -62,7 +63,7 @@ export const sessionNotesQuery = (sessionId: string) =>
   queryOptions({
     queryKey: ["notes", "session", sessionId],
     queryFn: () => api<NoteSummary[]>(`/sessions/${sessionId}/notes`),
-    refetchInterval: (q) => (q.state.data?.some((n) => n.status === "processing") ? 2000 : false),
+    refetchInterval: (q) => (q.state.data?.some((n) => n.status === "processing") ? pollUnlessLive(2000) : false),
   });
 
 export const noteQuery = (noteId: string) =>
@@ -71,7 +72,7 @@ export const noteQuery = (noteId: string) =>
     queryFn: () => api<NoteDetail>(`/notes/${noteId}`),
     // Each editor keeps its own state; don't refetch under it.
     staleTime: Infinity,
-    refetchInterval: (q) => (q.state.data?.status === "processing" ? 2000 : false),
+    refetchInterval: (q) => (q.state.data?.status === "processing" ? pollUnlessLive(2000) : false),
   });
 
 export const noteVersionsQuery = (noteId: string) =>
@@ -84,6 +85,15 @@ export const noteVersionQuery = (noteId: string, v: number) =>
     staleTime: Infinity,
   });
 
+export interface Usage {
+  storageBytes: number;
+  documents: number;
+  recordings: number;
+  mediaSecondsTotal: number;
+  mediaSecondsThisMonth: number;
+}
+export const usageQuery = queryOptions({ queryKey: ["usage"], queryFn: () => api<Usage>("/usage") });
+
 export const recordingsQuery = queryOptions({
   queryKey: ["attempts", "recent"],
   queryFn: () =>
@@ -94,7 +104,7 @@ export const attemptsQuery = (sessionId: string) =>
   queryOptions({
     queryKey: ["attempts", "session", sessionId],
     queryFn: () => api<AttemptSummary[]>(`/sessions/${sessionId}/attempts`),
-    refetchInterval: (q) => (q.state.data?.some((a) => a.recording?.status === "processing") ? 3000 : false),
+    refetchInterval: (q) => (q.state.data?.some((a) => a.recording?.status === "processing") ? pollUnlessLive(3000) : false),
   });
 
 export const attemptQuery = (attemptId: string) =>
@@ -103,7 +113,7 @@ export const attemptQuery = (attemptId: string) =>
     queryFn: () => api<AttemptDetail>(`/attempts/${attemptId}`),
     // Playback URLs last an hour; refetch only while processing.
     staleTime: 45 * 60 * 1000,
-    refetchInterval: (q) => (q.state.data?.recording?.status === "processing" ? 3000 : false),
+    refetchInterval: (q) => (q.state.data?.recording?.status === "processing" ? pollUnlessLive(3000) : false),
   });
 
 export const sessionQuery = (sessionId: string) =>

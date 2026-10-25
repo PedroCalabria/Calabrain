@@ -3,6 +3,7 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
+  lazyRouteComponent,
   notFound,
   Outlet,
   redirect,
@@ -22,7 +23,6 @@ import {
 } from "./lib/queries.ts";
 import { meQuery } from "./lib/session.ts";
 import { AppLayout } from "./routes/app/AppLayout.tsx";
-import { DocumentPage } from "./routes/app/DocumentPage.tsx";
 import { NotePage } from "./routes/app/NotePage.tsx";
 import { Notes } from "./routes/app/Notes.tsx";
 import { Overview } from "./routes/app/Overview.tsx";
@@ -147,7 +147,8 @@ const documentRoute = createRoute({
   validateSearch: (s: Record<string, unknown>): { page?: number } =>
     Number(s.page) >= 1 ? { page: Math.floor(Number(s.page)) } : {},
   loader: ({ context, params }) => load(() => context.queryClient.ensureQueryData(documentQuery(params.documentId))),
-  component: DocumentPage,
+  // The PDF viewer (pdf.js) loads only when a document is opened.
+  component: lazyRouteComponent(() => import("./routes/app/DocumentPage.tsx"), "DocumentPage"),
 });
 const noteRoute = createRoute({
   getParentRoute: () => appRoute,

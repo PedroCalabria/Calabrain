@@ -78,7 +78,8 @@ export function SubjectPage() {
   const stats = useMemo(() => {
     const recorded = sessions.filter((s) => s.attemptCount > 0).length;
     const attempts = sessions.reduce((n, s) => n + s.attemptCount, 0);
-    return { recorded, attempts };
+    const minutes = Math.round(sessions.reduce((n, s) => n + s.recordedSeconds, 0) / 60);
+    return { recorded, attempts, minutes };
   }, [sessions]);
 
   const excluded = target?.kind === "move-folder" ? descendants(folders, target.folder.id) : new Set<string>();
@@ -126,7 +127,7 @@ export function SubjectPage() {
           {subject.documentCount}
         </Stat>
         <Stat i={4} icon={<Clock size={20} strokeWidth={1.75} />} tone="bg-brand-tint text-brand" label="Recorded time">
-          0 min
+          {stats.minutes} min
         </Stat>
       </ul>
 

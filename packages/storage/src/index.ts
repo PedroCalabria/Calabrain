@@ -13,6 +13,7 @@ import {
   DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   ListPartsCommand,
   PutObjectCommand,
   S3Client,
@@ -152,6 +153,17 @@ export function createStorage(config: StorageConfig) {
 
     async putBytes(key: string, body: Uint8Array, contentType: string): Promise<void> {
       await s3.send(new PutObjectCommand({ Bucket, Key: key, Body: body, ContentType: contentType }));
+    },
+
+    async list(prefix: string): Promise<{ key: string; lastModified: Date | null; size: number }[]> {
+      const out: { key: string; lastModified: Date | null; size: number }[] = [];
+      let token: string | undefined;
+      do {
+        const res = await s3.send(new ListObjectsV2Command({ Bucket, Prefix: prefix, ...(token ? { ContinuationToken: token } : {}) }));
+        for (const o of res.Contents ?? []) if (o.Key) out.push({ key: o.Key, lastModified: o.LastModified ?? null, size: o.Size ?? 0 });
+        token = res.IsTruncated ? res.NextContinuationToken : undefined;
+      } while (token);
+      return out;
     },
 
     async deleteMany(keys: string[]): Promise<void> {

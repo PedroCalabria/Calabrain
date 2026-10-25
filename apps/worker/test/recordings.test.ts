@@ -95,3 +95,30 @@ describe("process-recording job (RF12, RF14)", () => {
     expect(await reload(rec.id)).toMatchObject({ status: "failed", failureReason: "corrupt" });
   });
 });
+
+describe("daily jobs", () => {
+  it("backs the database up to the bucket", async () => {
+    const { backupDatabase, BACKUP_PREFIX } = await import("../src/jobs/backup.ts");
+    const key = await backupDatabase(storage, process.env.DATABASE_URL!);
+    expect(key.startsWith(BACKUP_PREFIX)).toBe(true);
+    const head = await storage.head(key);
+    expect(head!.size).toBeGreaterThan(500);
+  });
+
+  it("aborts uploads nobody finished and deletes files nobody used", async () => {
+    const { cleanupUploads } = await import("../src/jobs/uploads.ts");
+    const userId = crypto.randomUUID();
+    await db.insert(schema.users).values({ id: userId, name: "T", email: `${userId}@example.com` });
+    const key = `u/${userId}/orphan.pdf`;
+    await storage.putBytes(key, new Uint8Array([1, 2, 3]), "application/pdf");
+    const past = new Date(Date.now() - 2 * 86400000);
+    const [done] = await db
+      .insert(schema.uploads)
+      .values({ userId, storageKey: key, kind: "source_document", filename: "a.pdf", contentType: "application/pdf", sizeBytes: 3, status: "completed", expiresAt: past })
+      .returning();
+    const n = await cleanupUploads({ db, storage });
+    expect(n).toBeGreaterThanOrEqual(1);
+    expect(await storage.head(key)).toBeNull();
+    expect((await db.select().from(schema.uploads).where(eq(schema.uploads.id, done!.id)))[0]!.status).toBe("aborted");
+  });
+});
