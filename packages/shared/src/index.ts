@@ -3,6 +3,7 @@ export * from "./limits.ts";
 export * from "./tree.ts";
 export * from "./uploads.ts";
 export * from "./notes.ts";
+export * from "./recordings.ts";
 
 /** Error body every API route returns on failure. */
 export interface ApiError {

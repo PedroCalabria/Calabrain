@@ -9,7 +9,7 @@ A interface é em inglês (v1). A especificação completa está no doc "Platafo
 ```
 apps/web       React + Vite + TanStack Router/Query + Tailwind (design system "Plataforma de Estudos")
 apps/api       Fastify + Better Auth + Drizzle (Postgres)
-apps/worker    Processamento em segundo plano (pg-boss): texto e sumário de PDFs, capítulos, importação de anotações, versões de rascunhos parados, limpeza diária da lixeira
+apps/worker    Processamento em segundo plano (pg-boss): PDFs e capítulos, gravações (ffmpeg), importação de anotações, versões de rascunhos parados, limpeza diária da lixeira
 packages/db    Schema Drizzle, migrações e regras da lixeira (usado pela API e pelo worker)
 packages/storage  Cliente S3/R2 (upload multipart, URLs pré-assinadas)
 packages/editor  Schema das anotações (TipTap) e conversões de importação
@@ -18,7 +18,7 @@ packages/shared  Schemas Zod e limites usados pelo front e pelo back
 
 ## Rodando localmente
 
-Requisitos: Node 22+, pnpm 10 (`corepack enable`) e Docker.
+Requisitos: Node 22+, pnpm 10 (`corepack enable`), Docker e ffmpeg (o worker converte as gravações).
 
 ```bash
 cp .env.example .env          # gere um AUTH_SECRET: openssl rand -base64 32
@@ -84,5 +84,5 @@ Definidos em `packages/shared/src/limits.ts`: PDF até 200 MB, gravação até 2
 2. **Árvore** — Assunto, Pastas e Sessões, mover e reordenar, lixeira de 30 dias com restauração em cascata (RF02–03). ✅
 3. **Documentos** — upload multipart direto para o R2 com retomada, extração de texto e sumário, deduplicação, visualizador e divisão de livro em sessões (RF04–08). ✅
 4. **Anotações** — editor (TipTap) com rascunho contínuo, versões imutáveis, conflito entre abas (409), histórico e restauração, importação de .txt, .md, .docx e PDF (RF09–11). ✅
-5. Gravação, conversão, player e marcadores (RF12–15).
+5. **Gravações** — tentativas com limite de duração (checado no navegador e no worker), substituição, conversão para MP4 H.264, áudio extraído e miniatura, player com velocidade e marcadores, página da sessão no layout aprovado (RF12–15). ✅
 6. Status em tempo real, registro de uso, responsividade e deploy (RF16–18).

@@ -49,12 +49,15 @@ export function DocumentsPanel({
   subjectId,
   target,
   documents,
+  bare = false,
 }: {
   title: string;
   hint?: string;
   subjectId: string;
   target: { folderId?: string; sessionId?: string };
   documents: DocumentNode[];
+  /** Inside another panel (the session's side tabs): no frame, smaller heading. */
+  bare?: boolean;
 }) {
   const qc = useQueryClient();
   const toast = useToast();
@@ -115,15 +118,15 @@ export function DocumentsPanel({
 
   return (
     <section
-      className={clsx("panel p-4 transition-colors duration-[250ms] sm:p-5", dragging && "bg-surface-sunken")}
+      className={clsx(!bare && "panel p-4 sm:p-5", "rounded-[14px] transition-colors duration-[250ms]", dragging && "bg-surface-sunken")}
       aria-label={title}
       onDragOver={(e) => (e.preventDefault(), setDragging(true))}
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
     >
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg leading-6 font-medium">{title}</h2>
-        <button type="button" className="btn btn-secondary h-8 px-3 text-[13px]" onClick={() => input.current?.click()}>
+        {bare ? <span className="sr-only">{title}</span> : <h2 className="text-lg leading-6 font-medium">{title}</h2>}
+        <button type="button" className={clsx("btn btn-secondary h-8 px-3 text-[13px]", bare && "ml-auto")} onClick={() => input.current?.click()}>
           <Plus size={16} strokeWidth={1.75} aria-hidden />
           Add
         </button>

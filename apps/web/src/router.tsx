@@ -8,13 +8,25 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { ApiRequestError } from "./lib/api.ts";
-import { documentQuery, noteQuery, notesQuery, sessionNotesQuery, sessionQuery, subjectsQuery, trashQuery, treeQuery } from "./lib/queries.ts";
+import {
+  attemptsQuery,
+  documentQuery,
+  noteQuery,
+  notesQuery,
+  recordingsQuery,
+  sessionNotesQuery,
+  sessionQuery,
+  subjectsQuery,
+  trashQuery,
+  treeQuery,
+} from "./lib/queries.ts";
 import { meQuery } from "./lib/session.ts";
 import { AppLayout } from "./routes/app/AppLayout.tsx";
 import { DocumentPage } from "./routes/app/DocumentPage.tsx";
 import { NotePage } from "./routes/app/NotePage.tsx";
 import { Notes } from "./routes/app/Notes.tsx";
 import { Overview } from "./routes/app/Overview.tsx";
+import { Recordings } from "./routes/app/Recordings.tsx";
 import { SessionPage } from "./routes/app/SessionPage.tsx";
 import { Settings } from "./routes/app/Settings.tsx";
 import { SubjectPage } from "./routes/app/SubjectPage.tsx";
@@ -116,12 +128,15 @@ const subjectRoute = createRoute({
 const sessionRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/sessions/$sessionId",
+  validateSearch: (s: Record<string, unknown>): { attempt?: string } =>
+    typeof s.attempt === "string" ? { attempt: s.attempt } : {},
   loader: ({ context, params }) =>
     load(async () => {
       const session = await context.queryClient.ensureQueryData(sessionQuery(params.sessionId));
       await Promise.all([
         context.queryClient.ensureQueryData(treeQuery(session.subjectId)),
         context.queryClient.ensureQueryData(sessionNotesQuery(session.id)),
+        context.queryClient.ensureQueryData(attemptsQuery(session.id)),
       ]);
     }),
   component: SessionPage,
@@ -150,6 +165,12 @@ const notesRoute = createRoute({
   loader: ({ context }) => context.queryClient.ensureQueryData(notesQuery),
   component: Notes,
 });
+const recordingsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/recordings",
+  loader: ({ context }) => context.queryClient.ensureQueryData(recordingsQuery),
+  component: Recordings,
+});
 const trashRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/trash",
@@ -173,8 +194,8 @@ const routeTree = rootRoute.addChildren([
     documentRoute,
     noteRoute,
     notesRoute,
+    recordingsRoute,
     trashRoute,
-    upcoming("/recordings", "Recordings", "Upload your explanations and rewatch them here, after notes."),
     upcoming("/calendar", "Calendar", "Your study calendar comes in a later phase."),
   ]),
 ]);
