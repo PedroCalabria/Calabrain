@@ -7,7 +7,8 @@
     "dev": "tsx watch --clear-screen=false src/server.ts",
     "start": "tsx src/server.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "start:prod": "tsx ../../packages/db/src/migrate.ts && tsx src/server.ts"
   },
   "dependencies": {
     "@calabrain/db": "workspace:*",

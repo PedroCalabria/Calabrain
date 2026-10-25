@@ -52,6 +52,28 @@ O bucket precisa de uma regra de CORS para o navegador enviar e ler os arquivos 
 
 Adicione também uma regra de ciclo de vida que aborta uploads multipart incompletos após 1 dia.
 
+## Deploy
+
+**API e worker na VPS** (Docker Compose), **web no Cloudflare Pages**, **arquivos no R2**.
+
+1. **Servidor**: clone o repositório na VPS, copie `.env.example` para `.env` e preencha para produção:
+   - `NODE_ENV=production`, `POSTGRES_PASSWORD` (só letras e números, porque entra na URL do banco), `AUTH_SECRET` (`openssl rand -base64 32`);
+   - `API_URL=https://api.seu-dominio` e `WEB_URL=https://app.seu-dominio` (os dois no mesmo domínio, para o cookie de sessão funcionar);
+   - SMTP do provedor de e-mail e `MAIL_FROM`;
+   - as variáveis `S3_*` do R2 (veja "Armazenamento de arquivos").
+2. Suba tudo: `docker compose -f docker-compose.prod.yml up -d --build`. A API aplica as migrações ao iniciar e escuta só em `127.0.0.1:3000`.
+3. **Proxy reverso com HTTPS** para `api.seu-dominio` → `http://127.0.0.1:3000` (no CloudPanel: *Add Site → Reverse Proxy*). Para os status em tempo real, desligue o buffering em `/events`:
+   ```nginx
+   location /events { proxy_pass http://127.0.0.1:3000; proxy_buffering off; proxy_read_timeout 1h; }
+   ```
+   Aumente também o limite de corpo só se for usar uploads pela API (não é o caso: os arquivos vão direto ao R2).
+4. **Web no Cloudflare Pages**: conecte o repositório, comando de build `pnpm --filter @calabrain/web build`, pasta de saída `apps/web/dist`, variável `VITE_API_URL=https://api.seu-dominio` e domínio `app.seu-dominio`. O arquivo `_redirects` já manda todas as rotas para o app.
+5. **Atualizar**: `git pull && docker compose -f docker-compose.prod.yml up -d --build`.
+
+**Backup**: o worker roda `pg_dump` todo dia às 04:07 (horário de Brasília) e guarda no bucket em `backups/`, mantendo os 14 mais recentes. Para restaurar: baixe o arquivo do R2 e rode `gunzip -c calabrain-<data>.sql.gz | docker compose -f docker-compose.prod.yml exec -T postgres psql -U calabrain calabrain`.
+
+**Rotinas do worker**: limpeza da lixeira e de uploads abandonados (todo dia às 03:17), versões de rascunhos parados (a cada 5 minutos) e backup (04:07).
+
 ## Testes
 
 Os testes rodam contra um Postgres real (bancos `calabrain_test` e `calabrain_worker_test`, recriados a cada execução) e um servidor S3 de teste na porta 9100 (`moto_server`, o mesmo do CI):
@@ -85,4 +107,4 @@ Definidos em `packages/shared/src/limits.ts`: PDF até 200 MB, gravação até 2
 3. **Documentos** — upload multipart direto para o R2 com retomada, extração de texto e sumário, deduplicação, visualizador e divisão de livro em sessões (RF04–08). ✅
 4. **Anotações** — editor (TipTap) com rascunho contínuo, versões imutáveis, conflito entre abas (409), histórico e restauração, importação de .txt, .md, .docx e PDF (RF09–11). ✅
 5. **Gravações** — tentativas com limite de duração (checado no navegador e no worker), substituição, conversão para MP4 H.264, áudio extraído e miniatura, player com velocidade e marcadores, página da sessão no layout aprovado (RF12–15). ✅
-6. Status em tempo real, registro de uso, responsividade e deploy (RF16–18).
+6. **Tempo real e deploy** — status por Server-Sent Events (com polling de reserva), registro e painel de uso, revisão de responsividade, Docker Compose de produção, backup diário e limpeza de uploads (RF16–18). ✅

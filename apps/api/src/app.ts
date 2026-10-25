@@ -6,6 +6,7 @@ import { env } from "./env.ts";
 import { HttpError } from "./lib/errors.ts";
 import { authHandlerRoutes } from "./routes/auth-handler.ts";
 import { documentRoutes } from "./routes/documents.ts";
+import { eventRoutes } from "./routes/events.ts";
 import { folderRoutes } from "./routes/folders.ts";
 import { meRoutes } from "./routes/me.ts";
 import { noteRoutes } from "./routes/notes.ts";
@@ -14,6 +15,8 @@ import { sessionRoutes } from "./routes/sessions.ts";
 import { subjectRoutes } from "./routes/subjects.ts";
 import { trashRoutes } from "./routes/trash.ts";
 import { uploadRoutes } from "./routes/uploads.ts";
+import { usageRoutes } from "./routes/usage.ts";
+import { stopEvents } from "./lib/events.ts";
 import { stopQueue } from "./lib/queue.ts";
 
 export async function buildApp(opts: FastifyServerOptions = {}) {
@@ -65,7 +68,10 @@ export async function buildApp(opts: FastifyServerOptions = {}) {
   await app.register(documentRoutes);
   await app.register(noteRoutes);
   await app.register(recordingRoutes);
+  await app.register(eventRoutes);
+  await app.register(usageRoutes);
   app.addHook("onClose", stopQueue);
+  app.addHook("onClose", stopEvents);
 
   return app;
 }

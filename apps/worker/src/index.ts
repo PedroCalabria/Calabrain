@@ -4,7 +4,8 @@
  */
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { createDb } from "@calabrain/db";
+import { createDb, schema } from "@calabrain/db";
+import { announce } from "@calabrain/db/events";
 import { commitIdleDrafts } from "@calabrain/db/notes";
 import { purgeExpired } from "@calabrain/db/trash";
 import {
@@ -15,7 +16,8 @@ import {
   type ProcessRecordingJob,
   type SplitDocumentJob,
 } from "@calabrain/shared";
-import { PgBoss } from "pg-boss";
+import { eq } from "drizzle-orm";
+import { PgBoss, type Job } from "pg-boss";
 
 const rootEnv = fileURLToPath(new URL("../../../.env", import.meta.url));
 if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
@@ -28,6 +30,8 @@ const { storage, deleteObjects } = await import("./storage.ts");
 const { processDocument, splitDocument } = await import("./jobs/documents.ts");
 const { importNote } = await import("./jobs/notes.ts");
 const { processRecording } = await import("./jobs/recordings.ts");
+const { cleanupUploads } = await import("./jobs/uploads.ts");
+const { backupDatabase } = await import("./jobs/backup.ts");
 
 const { db, pool } = createDb(url, 5);
 const deps = { db, storage };
@@ -38,24 +42,39 @@ for (const name of Object.values(jobs)) await boss.createQueue(name);
 
 const log = (msg: string) => console.log(`[worker] ${msg}`);
 
+/** Same as the API's enqueue retryLimit: after the last retry the item is marked failed, not left processing. */
+const RETRY_LIMIT = 3;
+const tables = { document: schema.sourceDocuments, note: schema.notes, recording: schema.recordings } as const;
+
+async function guarded(job: Job<object>, type: keyof typeof tables, id: string, fn: () => Promise<void>) {
+  try {
+    await fn();
+  } catch (err) {
+    console.error(`[worker] ${type} ${id} failed (try ${job.retryCount + 1})`, err);
+    if (job.retryCount < RETRY_LIMIT) throw err;
+    await db.update(tables[type]).set({ status: "failed", failureReason: "internal" }).where(eq(tables[type].id, id));
+  }
+  await announce(db, type, id);
+}
+
 await boss.work<ProcessDocumentJob>(jobs.processDocument, { localConcurrency: 2 }, async ([job]) => {
-  await processDocument(deps, job!.data.documentId);
+  await guarded(job!, "document", job!.data.documentId, () => processDocument(deps, job!.data.documentId));
   log(`document ${job!.data.documentId} processed`);
 });
 
 await boss.work<SplitDocumentJob>(jobs.splitDocument, { localConcurrency: 2 }, async ([job]) => {
-  await splitDocument(deps, job!.data.documentId);
+  await guarded(job!, "document", job!.data.documentId, () => splitDocument(deps, job!.data.documentId));
   log(`chapter ${job!.data.documentId} created`);
 });
 
 await boss.work<ImportNoteJob>(jobs.importNote, { localConcurrency: 2 }, async ([job]) => {
-  await importNote(deps, job!.data.noteId, job!.data.uploadId);
+  await guarded(job!, "note", job!.data.noteId, () => importNote(deps, job!.data.noteId, job!.data.uploadId));
   log(`note ${job!.data.noteId} imported`);
 });
 
 // Media conversion is heavy: one at a time.
 await boss.work<ProcessRecordingJob>(jobs.processRecording, { localConcurrency: 1 }, async ([job]) => {
-  await processRecording(deps, job!.data.recordingId);
+  await guarded(job!, "recording", job!.data.recordingId, () => processRecording(deps, job!.data.recordingId));
   log(`recording ${job!.data.recordingId} processed`);
 });
 
@@ -71,7 +90,16 @@ await boss.schedule(jobs.purgeTrash, "17 3 * * *", null, { tz: "America/Sao_Paul
 await boss.work(jobs.purgeTrash, async () => {
   const { purged, keys } = await purgeExpired(db, limits.trashRetentionDays);
   await deleteObjects(keys);
-  log(`trash purge: ${purged} item(s), ${keys.length} file(s)`);
+  const uploadsCleaned = await cleanupUploads(deps);
+  log(`trash purge: ${purged} item(s), ${keys.length} file(s); ${uploadsCleaned} abandoned upload(s)`);
+});
+
+// Database backup to the bucket: every day at 04:07 (São Paulo), keeping the last 14.
+await boss.createQueue("backup-db");
+await boss.schedule("backup-db", "7 4 * * *", null, { tz: "America/Sao_Paulo" });
+await boss.work("backup-db", async () => {
+  const key = await backupDatabase(storage, url!);
+  log(`database backup saved to ${key}`);
 });
 
 log("ready, waiting for jobs");

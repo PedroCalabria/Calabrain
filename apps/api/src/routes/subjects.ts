@@ -127,6 +127,8 @@ export async function subjectRoutes(app: FastifyInstance) {
           noteCount: sql<number>`(select count(*)::int from ${notes} n where n.session_id = "study_sessions"."id" and n.deleted_at is null)`,
           attemptCount: sql<number>`(select count(*)::int from ${attempts} a where a.session_id = "study_sessions"."id" and a.deleted_at is null)`,
           documentCount: sql<number>`(select count(*)::int from ${sourceDocuments} d where d.session_id = "study_sessions"."id" and d.deleted_at is null)`,
+          recordedSeconds: sql<number>`(select coalesce(sum(r.duration_s), 0)::int from attempts a join recordings r on r.attempt_id = a.id
+            where a.session_id = "study_sessions"."id" and a.deleted_at is null and r.status = 'ready')`,
         })
         .from(studySessions)
         .where(and(eq(studySessions.subjectId, id), isNull(studySessions.deletedAt)))

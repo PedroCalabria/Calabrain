@@ -1,0 +1,42 @@
+# Production on the VPS: Postgres, API and worker. Files live in Cloudflare R2; the web app on Cloudflare Pages.
+# Put the production values in .env next to this file (see .env.example and the README).
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-calabrain}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-calabrain}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-calabrain}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: { context: ., target: api }
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-calabrain}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-calabrain}
+    ports:
+      # Only the reverse proxy on the VPS reaches the API.
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  worker:
+    build: { context: ., target: worker }
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-calabrain}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-calabrain}
+    depends_on:
+      postgres: { condition: service_healthy }
+      api: { condition: service_started }
+
+volumes:
+  pgdata:
