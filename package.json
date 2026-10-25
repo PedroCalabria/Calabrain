@@ -10,8 +10,8 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "db:generate": "pnpm --filter @calabrain/api db:generate",
-    "db:migrate": "pnpm --filter @calabrain/api db:migrate",
+    "db:generate": "pnpm --filter @calabrain/db db:generate",
+    "db:migrate": "pnpm --filter @calabrain/db db:migrate",
     "services:up": "docker compose up -d",
     "services:down": "docker compose down"
   },

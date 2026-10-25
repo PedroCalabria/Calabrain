@@ -9,7 +9,8 @@ A interface é em inglês (v1). A especificação completa está no doc "Platafo
 ```
 apps/web       React + Vite + TanStack Router/Query + Tailwind (design system "Plataforma de Estudos")
 apps/api       Fastify + Better Auth + Drizzle (Postgres)
-apps/worker    Processamento em segundo plano (pg-boss), PDF e mídia nas próximas etapas
+apps/worker    Processamento em segundo plano (pg-boss): limpeza diária da lixeira; PDF e mídia nas próximas etapas
+packages/db    Schema Drizzle, migrações e regras da lixeira (usado pela API e pelo worker)
 packages/shared  Schemas Zod e limites usados pelo front e pelo back
 ```
 
@@ -43,10 +44,10 @@ Para usar outro banco: `TEST_DATABASE_URL=postgres://... pnpm test`.
 
 ## Banco de dados
 
-O schema fica em `apps/api/src/db/schema.ts` e já contém todas as tabelas da fase 1. Depois de mudar o schema:
+O schema fica em `packages/db/src/schema.ts` e já contém todas as tabelas da fase 1. Depois de mudar o schema:
 
 ```bash
-pnpm db:generate   # cria a migração SQL em apps/api/drizzle/
+pnpm db:generate   # cria a migração SQL em packages/db/drizzle/
 pnpm db:migrate
 ```
 
@@ -57,7 +58,7 @@ Definidos em `packages/shared/src/limits.ts`: PDF até 200 MB, gravação até 2
 ## Etapas da fase 1
 
 1. **Base e login** — monorepo, schema completo, cadastro, login, saída e recuperação de senha (RF01). ✅
-2. Árvore de Assunto, Pastas e Sessões, com lixeira (RF02–03).
+2. **Árvore** — Assunto, Pastas e Sessões, mover e reordenar, lixeira de 30 dias com restauração em cascata (RF02–03). ✅
 3. Upload multipart para o R2, PDFs, visualizador e divisão de livro (RF04–08).
 4. Editor de anotações com versões e importação (RF09–11).
 5. Gravação, conversão, player e marcadores (RF12–15).

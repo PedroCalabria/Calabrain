@@ -5,7 +5,11 @@ import { ZodError } from "zod";
 import { env } from "./env.ts";
 import { HttpError } from "./lib/errors.ts";
 import { authHandlerRoutes } from "./routes/auth-handler.ts";
+import { folderRoutes } from "./routes/folders.ts";
 import { meRoutes } from "./routes/me.ts";
+import { sessionRoutes } from "./routes/sessions.ts";
+import { subjectRoutes } from "./routes/subjects.ts";
+import { trashRoutes } from "./routes/trash.ts";
 
 export async function buildApp(opts: FastifyServerOptions = {}) {
   const app = Fastify({ trustProxy: true, ...opts });
@@ -48,6 +52,10 @@ export async function buildApp(opts: FastifyServerOptions = {}) {
   app.get("/health", async () => ({ ok: true }));
   await app.register(authHandlerRoutes);
   await app.register(meRoutes);
+  await app.register(subjectRoutes);
+  await app.register(folderRoutes);
+  await app.register(sessionRoutes);
+  await app.register(trashRoutes);
 
   return app;
 }

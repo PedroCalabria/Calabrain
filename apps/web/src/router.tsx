@@ -3,13 +3,20 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
+  notFound,
   Outlet,
   redirect,
 } from "@tanstack/react-router";
+import { ApiRequestError } from "./lib/api.ts";
+import { sessionQuery, subjectsQuery, trashQuery, treeQuery } from "./lib/queries.ts";
 import { meQuery } from "./lib/session.ts";
 import { AppLayout } from "./routes/app/AppLayout.tsx";
 import { Overview } from "./routes/app/Overview.tsx";
+import { SessionPage } from "./routes/app/SessionPage.tsx";
 import { Settings } from "./routes/app/Settings.tsx";
+import { SubjectPage } from "./routes/app/SubjectPage.tsx";
+import { Subjects } from "./routes/app/Subjects.tsx";
+import { Trash } from "./routes/app/Trash.tsx";
 import { Upcoming } from "./routes/app/Upcoming.tsx";
 import { ForgotPassword } from "./routes/auth/ForgotPassword.tsx";
 import { ResetPassword } from "./routes/auth/ResetPassword.tsx";
@@ -75,7 +82,46 @@ const appRoute = createRoute({
   component: AppLayout,
 });
 
-const overviewRoute = createRoute({ getParentRoute: () => appRoute, path: "/", component: Overview });
+/** A 404 from the API (missing, deleted or someone else's) shows the not-found page. */
+async function load<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof ApiRequestError && err.status === 404) throw notFound();
+    throw err;
+  }
+}
+
+const overviewRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/",
+  loader: ({ context }) => context.queryClient.ensureQueryData(subjectsQuery),
+  component: Overview,
+});
+const subjectsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/subjects",
+  loader: ({ context }) => context.queryClient.ensureQueryData(subjectsQuery),
+  component: Subjects,
+});
+const subjectRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/subjects/$subjectId",
+  loader: ({ context, params }) => load(() => context.queryClient.ensureQueryData(treeQuery(params.subjectId))),
+  component: SubjectPage,
+});
+const sessionRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/sessions/$sessionId",
+  loader: ({ context, params }) => load(() => context.queryClient.ensureQueryData(sessionQuery(params.sessionId))),
+  component: SessionPage,
+});
+const trashRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/trash",
+  loader: ({ context }) => context.queryClient.ensureQueryData(trashQuery),
+  component: Trash,
+});
 const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: Settings });
 
 const upcoming = (path: string, title: string, text: string) =>
@@ -87,11 +133,13 @@ const routeTree = rootRoute.addChildren([
   appRoute.addChildren([
     overviewRoute,
     settingsRoute,
-    upcoming("/subjects", "Subjects", "Subjects, folders and sessions arrive in the next update."),
+    subjectsRoute,
+    subjectRoute,
+    sessionRoute,
+    trashRoute,
     upcoming("/notes", "Notes", "Notes arrive after subjects and documents: an editor with versions and imports."),
     upcoming("/recordings", "Recordings", "Upload your explanations and rewatch them here, after notes."),
     upcoming("/calendar", "Calendar", "Your study calendar comes in a later phase."),
-    upcoming("/trash", "Trash", "Deleted subjects, folders and sessions will wait here for 30 days."),
   ]),
 ]);
 
@@ -100,6 +148,7 @@ export function makeRouter(queryClient: QueryClient) {
     routeTree,
     context: { queryClient },
     defaultPreload: "intent",
+    defaultNotFoundComponent: NotFound,
     scrollRestoration: true,
   });
 }
