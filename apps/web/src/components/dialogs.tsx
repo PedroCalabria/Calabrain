@@ -56,7 +56,7 @@ export function NameDialog({
     <Dialog open={open} onClose={onClose} title={title}>
       <form className="flex flex-col gap-4" onSubmit={submit} noValidate>
         {error ? <FormAlert>{error}</FormAlert> : null}
-        <TextField label={label} value={value} autoFocus error={fields.title} onChange={(e) => setValue(e.target.value)} />
+        <TextField label={label} value={value} autoFocus error={fields.title ?? Object.values(fields)[0]} onChange={(e) => setValue(e.target.value)} />
         <DialogActions onCancel={onClose} pending={pending} submitLabel={submitLabel} />
       </form>
     </Dialog>

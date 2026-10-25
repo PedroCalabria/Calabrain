@@ -9,6 +9,7 @@ import { documentRoutes } from "./routes/documents.ts";
 import { folderRoutes } from "./routes/folders.ts";
 import { meRoutes } from "./routes/me.ts";
 import { noteRoutes } from "./routes/notes.ts";
+import { recordingRoutes } from "./routes/recordings.ts";
 import { sessionRoutes } from "./routes/sessions.ts";
 import { subjectRoutes } from "./routes/subjects.ts";
 import { trashRoutes } from "./routes/trash.ts";
@@ -63,6 +64,7 @@ export async function buildApp(opts: FastifyServerOptions = {}) {
   await app.register(uploadRoutes);
   await app.register(documentRoutes);
   await app.register(noteRoutes);
+  await app.register(recordingRoutes);
   app.addHook("onClose", stopQueue);
 
   return app;

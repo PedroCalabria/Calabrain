@@ -20,7 +20,7 @@ export const ago = (iso: string) => {
 };
 
 /** The notes of a session: create, import (.txt, .md, .docx, PDF), rename, reorder, trash. */
-export function NotesPanel({ sessionId }: { sessionId: string }) {
+export function NotesPanel({ sessionId, bare = false, onPick }: { sessionId: string; bare?: boolean; onPick?: (noteId: string) => void }) {
   const { data: notes } = useSuspenseQuery(sessionNotesQuery(sessionId));
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -33,7 +33,8 @@ export function NotesPanel({ sessionId }: { sessionId: string }) {
   async function create() {
     const note = await mutations.createNote(sessionId, {});
     await refreshTree(qc);
-    await navigate({ to: "/notes/$noteId", params: { noteId: note.id } });
+    if (onPick || bare) onPick?.(note.id);
+    else await navigate({ to: "/notes/$noteId", params: { noteId: note.id } });
   }
 
   async function importFile(file: File) {
@@ -60,9 +61,9 @@ export function NotesPanel({ sessionId }: { sessionId: string }) {
   }
 
   return (
-    <section className="panel p-4 sm:p-5" aria-label="Notes">
+    <section className={bare ? "" : "panel p-4 sm:p-5"} aria-label="Notes">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg leading-6 font-medium">Notes</h2>
+        {bare ? <span className="text-xs text-ink-muted">{notes.length ? "Your notes for this session" : ""}</span> : <h2 className="text-lg leading-6 font-medium">Notes</h2>}
         <div className="flex items-center gap-2">
           <button type="button" className="btn btn-ghost h-8 text-[13px]" onClick={() => input.current?.click()} disabled={!!importing}>
             <FileUp size={16} strokeWidth={1.75} aria-hidden />
@@ -85,7 +86,7 @@ export function NotesPanel({ sessionId }: { sessionId: string }) {
           />
         </div>
       </div>
-      <p className="mt-1 text-xs leading-4 text-ink-muted">Saved as you type, with a version after 5 minutes idle or when you leave.</p>
+      {bare ? null : <p className="mt-1 text-xs leading-4 text-ink-muted">Saved as you type, with a version after 5 minutes idle or when you leave.</p>}
       {error ? (
         <div className="mt-3">
           <FormAlert>{error}</FormAlert>
@@ -99,9 +100,15 @@ export function NotesPanel({ sessionId }: { sessionId: string }) {
               <NotebookPen size={16} strokeWidth={1.75} aria-hidden />
             </span>
             <span className="min-w-0 flex-1">
-              <Link to="/notes/$noteId" params={{ noteId: n.id }} className="block truncate text-[13px] leading-[18px] font-medium text-ink no-underline hover:underline hover:underline-offset-3">
-                {n.title}
-              </Link>
+              {onPick ? (
+                <button type="button" disabled={n.status !== "ready"} onClick={() => onPick(n.id)} className="block max-w-full truncate text-left text-[13px] leading-[18px] font-medium text-ink hover:underline hover:underline-offset-3 disabled:no-underline">
+                  {n.title}
+                </button>
+              ) : (
+                <Link to="/notes/$noteId" params={{ noteId: n.id }} className="block truncate text-[13px] leading-[18px] font-medium text-ink no-underline hover:underline hover:underline-offset-3">
+                  {n.title}
+                </Link>
+              )}
               <span className={n.status === "failed" ? "block truncate text-xs text-wrong" : "block truncate text-xs leading-4 text-ink-muted"}>
                 {n.status === "failed"
                   ? failureMessages[n.failureReason ?? ""] ?? failureMessages.internal

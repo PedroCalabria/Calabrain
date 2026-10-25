@@ -1,4 +1,7 @@
 import type {
+  AttemptDetail,
+  AttemptSummary,
+  Marker,
   CreateNoteInput,
   DocNode,
   NoteDetail,
@@ -81,6 +84,28 @@ export const noteVersionQuery = (noteId: string, v: number) =>
     staleTime: Infinity,
   });
 
+export const recordingsQuery = queryOptions({
+  queryKey: ["attempts", "recent"],
+  queryFn: () =>
+    api<(AttemptSummary & { sessionId: string; sessionTitle: string; subjectTitle: string })[]>("/recordings"),
+});
+
+export const attemptsQuery = (sessionId: string) =>
+  queryOptions({
+    queryKey: ["attempts", "session", sessionId],
+    queryFn: () => api<AttemptSummary[]>(`/sessions/${sessionId}/attempts`),
+    refetchInterval: (q) => (q.state.data?.some((a) => a.recording?.status === "processing") ? 3000 : false),
+  });
+
+export const attemptQuery = (attemptId: string) =>
+  queryOptions({
+    queryKey: ["attempts", attemptId],
+    queryFn: () => api<AttemptDetail>(`/attempts/${attemptId}`),
+    // Playback URLs last an hour; refetch only while processing.
+    staleTime: 45 * 60 * 1000,
+    refetchInterval: (q) => (q.state.data?.recording?.status === "processing" ? 3000 : false),
+  });
+
 export const sessionQuery = (sessionId: string) =>
   queryOptions({
     queryKey: ["sessions", sessionId],
@@ -122,6 +147,15 @@ export const mutations = {
   createVersion: (id: string, baseVersion: number, content?: DocNode, force?: boolean) =>
     api<{ version: number; created: boolean }>(`/notes/${id}/versions`, json("POST", { baseVersion, content, force })),
   restoreVersion: (id: string, v: number) => api<{ version: number }>(`/notes/${id}/versions/${v}/restore`, json("POST")),
+  createAttempt: (sessionId: string, uploadId: string, durationS?: number) =>
+    api<AttemptDetail>(`/sessions/${sessionId}/attempts`, json("POST", { uploadId, durationS })),
+  replaceRecording: (attemptId: string, uploadId: string, durationS?: number) =>
+    api<AttemptDetail>(`/attempts/${attemptId}/recording`, json("PUT", { uploadId, durationS })),
+  deleteAttempt: (attemptId: string) => api<void>(`/attempts/${attemptId}`, json("DELETE")),
+  addMarker: (recordingId: string, tSeconds: number, label: string) =>
+    api<Marker>(`/recordings/${recordingId}/markers`, json("POST", { tSeconds, label })),
+  updateMarker: (id: string, label: string) => api<Marker>(`/markers/${id}`, json("PATCH", { label })),
+  deleteMarker: (id: string) => api<void>(`/markers/${id}`, json("DELETE")),
   restore: (type: TrashType, id: string) => api<void>(`/trash/${type}/${id}/restore`, json("POST")),
   erase: (type: TrashType, id: string) => api<void>(`/trash/${type}/${id}`, json("DELETE")),
 };
@@ -134,4 +168,5 @@ export const refreshTree = (qc: QueryClient) =>
     qc.invalidateQueries({ queryKey: ["trash"] }),
     qc.invalidateQueries({ queryKey: ["documents"] }),
     qc.invalidateQueries({ queryKey: ["notes"] }),
+    qc.invalidateQueries({ queryKey: ["attempts", "session"] }),
   ]);

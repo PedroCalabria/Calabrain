@@ -7,7 +7,14 @@ import { fileURLToPath } from "node:url";
 import { createDb } from "@calabrain/db";
 import { commitIdleDrafts } from "@calabrain/db/notes";
 import { purgeExpired } from "@calabrain/db/trash";
-import { jobs, limits, type ImportNoteJob, type ProcessDocumentJob, type SplitDocumentJob } from "@calabrain/shared";
+import {
+  jobs,
+  limits,
+  type ImportNoteJob,
+  type ProcessDocumentJob,
+  type ProcessRecordingJob,
+  type SplitDocumentJob,
+} from "@calabrain/shared";
 import { PgBoss } from "pg-boss";
 
 const rootEnv = fileURLToPath(new URL("../../../.env", import.meta.url));
@@ -20,6 +27,7 @@ if (!url) throw new Error("DATABASE_URL is not set. Copy .env.example to .env an
 const { storage, deleteObjects } = await import("./storage.ts");
 const { processDocument, splitDocument } = await import("./jobs/documents.ts");
 const { importNote } = await import("./jobs/notes.ts");
+const { processRecording } = await import("./jobs/recordings.ts");
 
 const { db, pool } = createDb(url, 5);
 const deps = { db, storage };
@@ -43,6 +51,12 @@ await boss.work<SplitDocumentJob>(jobs.splitDocument, { localConcurrency: 2 }, a
 await boss.work<ImportNoteJob>(jobs.importNote, { localConcurrency: 2 }, async ([job]) => {
   await importNote(deps, job!.data.noteId, job!.data.uploadId);
   log(`note ${job!.data.noteId} imported`);
+});
+
+// Media conversion is heavy: one at a time.
+await boss.work<ProcessRecordingJob>(jobs.processRecording, { localConcurrency: 1 }, async ([job]) => {
+  await processRecording(deps, job!.data.recordingId);
+  log(`recording ${job!.data.recordingId} processed`);
 });
 
 // Safety net for RF10: drafts idle for 5 minutes become a version even if the tab never said goodbye.

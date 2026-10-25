@@ -459,3 +459,37 @@
 .tableWrapper {
   overflow-x: auto;
 }
+
+/* Player (RF15) */
+.pb-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #fff;
+  flex: none;
+  transition: background-color var(--t-hover) var(--ease-soft);
+}
+.pb-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+input.volume {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+}
+input.volume::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+}
+input.volume::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+}
