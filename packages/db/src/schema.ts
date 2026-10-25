@@ -340,8 +340,12 @@ export const uploads = pgTable(
     storageKey: text("storage_key").notNull(),
     r2UploadId: text("r2_upload_id"),
     kind: uploadKind("kind").notNull(),
+    filename: text("filename").notNull(),
+    contentType: text("content_type").notNull(),
     sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
     status: uploadStatus("status").notNull().default("pending"),
+    /** Set when a document, note or recording takes the file; an upload is used once. */
+    usedAt: timestamp("used_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     createdAt: createdAt(),
   },

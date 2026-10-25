@@ -5,11 +5,14 @@ import { ZodError } from "zod";
 import { env } from "./env.ts";
 import { HttpError } from "./lib/errors.ts";
 import { authHandlerRoutes } from "./routes/auth-handler.ts";
+import { documentRoutes } from "./routes/documents.ts";
 import { folderRoutes } from "./routes/folders.ts";
 import { meRoutes } from "./routes/me.ts";
 import { sessionRoutes } from "./routes/sessions.ts";
 import { subjectRoutes } from "./routes/subjects.ts";
 import { trashRoutes } from "./routes/trash.ts";
+import { uploadRoutes } from "./routes/uploads.ts";
+import { stopQueue } from "./lib/queue.ts";
 
 export async function buildApp(opts: FastifyServerOptions = {}) {
   const app = Fastify({ trustProxy: true, ...opts });
@@ -56,6 +59,9 @@ export async function buildApp(opts: FastifyServerOptions = {}) {
   await app.register(folderRoutes);
   await app.register(sessionRoutes);
   await app.register(trashRoutes);
+  await app.register(uploadRoutes);
+  await app.register(documentRoutes);
+  app.addHook("onClose", stopQueue);
 
   return app;
 }

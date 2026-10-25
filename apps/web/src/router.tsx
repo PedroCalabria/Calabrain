@@ -8,9 +8,10 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { ApiRequestError } from "./lib/api.ts";
-import { sessionQuery, subjectsQuery, trashQuery, treeQuery } from "./lib/queries.ts";
+import { documentQuery, sessionQuery, subjectsQuery, trashQuery, treeQuery } from "./lib/queries.ts";
 import { meQuery } from "./lib/session.ts";
 import { AppLayout } from "./routes/app/AppLayout.tsx";
+import { DocumentPage } from "./routes/app/DocumentPage.tsx";
 import { Overview } from "./routes/app/Overview.tsx";
 import { SessionPage } from "./routes/app/SessionPage.tsx";
 import { Settings } from "./routes/app/Settings.tsx";
@@ -113,8 +114,20 @@ const subjectRoute = createRoute({
 const sessionRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "/sessions/$sessionId",
-  loader: ({ context, params }) => load(() => context.queryClient.ensureQueryData(sessionQuery(params.sessionId))),
+  loader: ({ context, params }) =>
+    load(async () => {
+      const session = await context.queryClient.ensureQueryData(sessionQuery(params.sessionId));
+      await context.queryClient.ensureQueryData(treeQuery(session.subjectId));
+    }),
   component: SessionPage,
+});
+const documentRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/documents/$documentId",
+  validateSearch: (s: Record<string, unknown>): { page?: number } =>
+    Number(s.page) >= 1 ? { page: Math.floor(Number(s.page)) } : {},
+  loader: ({ context, params }) => load(() => context.queryClient.ensureQueryData(documentQuery(params.documentId))),
+  component: DocumentPage,
 });
 const trashRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -136,6 +149,7 @@ const routeTree = rootRoute.addChildren([
     subjectsRoute,
     subjectRoute,
     sessionRoute,
+    documentRoute,
     trashRoute,
     upcoming("/notes", "Notes", "Notes arrive after subjects and documents: an editor with versions and imports."),
     upcoming("/recordings", "Recordings", "Upload your explanations and rewatch them here, after notes."),

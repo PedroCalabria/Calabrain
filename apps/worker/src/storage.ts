@@ -1,4 +1,7 @@
-/** Object storage access for the worker. Wired to R2/MinIO in stage 3, with uploads. */
+import { createStorage, storageConfigFromEnv } from "@calabrain/storage";
+
+export const storage = createStorage(storageConfigFromEnv());
+
 export async function deleteObjects(keys: string[]): Promise<void> {
-  if (keys.length) console.warn("[worker] storage cleanup not wired yet:", keys.length, "key(s)");
+  if (keys.length) await storage.deleteMany(keys);
 }

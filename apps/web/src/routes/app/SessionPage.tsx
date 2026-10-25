@@ -1,17 +1,19 @@
 import { limits } from "@calabrain/shared";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { ChevronRight, FileText, NotebookPen, Video } from "lucide-react";
+import { ChevronRight, NotebookPen, Video } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { NameDialog } from "../../components/dialogs.tsx";
 import { Menu, useToast } from "../../components/overlay.tsx";
-import { mutations, refreshTree, sessionQuery } from "../../lib/queries.ts";
+import { DocumentsPanel } from "../../components/documents.tsx";
+import { mutations, refreshTree, sessionQuery, treeQuery } from "../../lib/queries.ts";
 
 const limitOptions = [5, 10, 15, 20, 25, 30].filter((m) => m <= limits.recordingMaxMinutes);
 
 export function SessionPage() {
   const { sessionId } = useParams({ strict: false }) as { sessionId: string };
   const { data: session } = useSuspenseQuery(sessionQuery(sessionId));
+  const { data: tree } = useSuspenseQuery(treeQuery(session.subjectId));
   const qc = useQueryClient();
   const navigate = useNavigate();
   const toast = useToast();
@@ -97,13 +99,22 @@ export function SessionPage() {
         </div>
       </header>
 
-      <ul className="mt-6 grid gap-4 md:grid-cols-3">
+      <div className="rise mt-6" style={{ "--i": 1 } as CSSProperties}>
+        <DocumentsPanel
+          title="Source documents"
+          hint="The chapter you're studying. The whole subject's material also counts as context."
+          subjectId={session.subjectId}
+          target={{ sessionId: session.id }}
+          documents={tree.documents.filter((d) => d.sessionId === session.id)}
+        />
+      </div>
+
+      <ul className="mt-6 grid gap-4 md:grid-cols-2">
         {[
-          { icon: FileText, tone: "bg-indigo-tint text-indigo", title: "Source documents", text: "PDFs for this chapter. Uploads arrive in the next update." },
           { icon: NotebookPen, tone: "bg-amber-tint text-amber", title: "Notes", text: "Write and version your notes here, after documents." },
           { icon: Video, tone: "bg-brand-tint text-brand", title: "Recordings", text: "Upload your explanation and rewatch it, after notes." },
         ].map(({ icon: Icon, tone, title, text }, i) => (
-          <li key={title} className="panel rise flex items-start gap-4 p-5" style={{ "--i": i + 1 } as CSSProperties}>
+          <li key={title} className="panel rise flex items-start gap-4 p-5" style={{ "--i": i + 2 } as CSSProperties}>
             <span className={`grid size-11 flex-none place-items-center rounded-full ${tone}`}>
               <Icon size={20} strokeWidth={1.75} aria-hidden />
             </span>

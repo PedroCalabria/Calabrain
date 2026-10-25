@@ -1,14 +1,13 @@
 /**
- * Background worker: PDF and media processing, fed by a queue in Postgres (pg-boss).
- * Jobs arrive with their features; today it runs the daily trash purge (RF03).
+ * Background worker, fed by a queue in Postgres (pg-boss): PDF text and chapters, media,
+ * note imports and the daily trash purge.
  */
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createDb } from "@calabrain/db";
 import { purgeExpired } from "@calabrain/db/trash";
-import { limits } from "@calabrain/shared";
+import { jobs, limits, type ProcessDocumentJob, type SplitDocumentJob } from "@calabrain/shared";
 import { PgBoss } from "pg-boss";
-import { deleteObjects } from "./storage.ts";
 
 const rootEnv = fileURLToPath(new URL("../../../.env", import.meta.url));
 if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
@@ -16,22 +15,38 @@ if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL is not set. Copy .env.example to .env and fill it in.");
 
+// Imported after the env is loaded: storage reads S3_* at import time.
+const { storage, deleteObjects } = await import("./storage.ts");
+const { processDocument, splitDocument } = await import("./jobs/documents.ts");
+
 const { db, pool } = createDb(url, 5);
+const deps = { db, storage };
 const boss = new PgBoss({ connectionString: url, schema: "pgboss" });
 boss.on("error", (err) => console.error("[worker]", err));
 await boss.start();
+for (const name of Object.values(jobs)) await boss.createQueue(name);
 
-// --- Trash purge: every day at 03:17 (São Paulo), erase what passed the 30-day window.
-const PURGE = "purge-trash";
-await boss.createQueue(PURGE);
-await boss.schedule(PURGE, "17 3 * * *", null, { tz: "America/Sao_Paulo" });
-await boss.work(PURGE, async () => {
-  const { purged, keys } = await purgeExpired(db, limits.trashRetentionDays);
-  await deleteObjects(keys);
-  console.log(`[worker] trash purge: ${purged} item(s), ${keys.length} file(s)`);
+const log = (msg: string) => console.log(`[worker] ${msg}`);
+
+await boss.work<ProcessDocumentJob>(jobs.processDocument, { localConcurrency: 2 }, async ([job]) => {
+  await processDocument(deps, job!.data.documentId);
+  log(`document ${job!.data.documentId} processed`);
 });
 
-console.log("[worker] ready, waiting for jobs");
+await boss.work<SplitDocumentJob>(jobs.splitDocument, { localConcurrency: 2 }, async ([job]) => {
+  await splitDocument(deps, job!.data.documentId);
+  log(`chapter ${job!.data.documentId} created`);
+});
+
+// Trash purge: every day at 03:17 (São Paulo), erase what passed the 30-day window, files included.
+await boss.schedule(jobs.purgeTrash, "17 3 * * *", null, { tz: "America/Sao_Paulo" });
+await boss.work(jobs.purgeTrash, async () => {
+  const { purged, keys } = await purgeExpired(db, limits.trashRetentionDays);
+  await deleteObjects(keys);
+  log(`trash purge: ${purged} item(s), ${keys.length} file(s)`);
+});
+
+log("ready, waiting for jobs");
 
 const stop = async () => {
   await boss.stop({ graceful: true });

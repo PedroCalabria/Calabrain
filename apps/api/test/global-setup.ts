@@ -1,3 +1,4 @@
+import { CreateBucketCommand, S3Client } from "@aws-sdk/client-s3";
 import { runMigrations } from "@calabrain/db/migrate";
 import pg from "pg";
 
@@ -11,4 +12,12 @@ export default async function setup() {
     await pool.end();
   }
   await runMigrations(url);
+
+  const s3 = new S3Client({
+    endpoint: process.env.TEST_S3_ENDPOINT ?? "http://127.0.0.1:9100",
+    region: "us-east-1",
+    forcePathStyle: true,
+    credentials: { accessKeyId: "test", secretAccessKey: "test-secret" },
+  });
+  await s3.send(new CreateBucketCommand({ Bucket: "calabrain-test" })).catch(() => undefined);
 }
