@@ -269,6 +269,9 @@
     animation: fade var(--t-enter) var(--ease-out) both;
     animation-delay: calc(var(--i, 0) * var(--stagger));
   }
+  .pulse {
+    animation: pulse 1.4s var(--ease-soft) infinite;
+  }
   .pop {
     transform-origin: top right;
     animation: pop 220ms var(--ease-out) both;
@@ -316,6 +319,17 @@
   to {
     opacity: 1;
     transform: none;
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.7);
   }
 }
 @keyframes fade {

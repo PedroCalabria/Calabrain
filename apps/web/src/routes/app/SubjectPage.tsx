@@ -2,10 +2,12 @@ import type { FolderNode, SessionNode, SubjectTree, TrashType } from "@calabrain
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import clsx from "clsx";
-import { BookOpen, ChevronDown, Clock, FileText, Folder, FolderOpen, Layers, Plus, Search, Check } from "lucide-react";
+import { BookOpen, Check, ChevronDown, Clock, FileText, Folder, FolderOpen, Layers, Plus, Scissors, Search } from "lucide-react";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { MoveDialog, NameDialog, SubjectDialog } from "../../components/dialogs.tsx";
-import { Menu, useToast, type MenuItem } from "../../components/overlay.tsx";
+import { DocumentsPanel } from "../../components/documents.tsx";
+import { Dialog, Menu, useToast, type MenuItem } from "../../components/overlay.tsx";
+import { SplitBookDialog } from "../../components/split.tsx";
 import { ApiRequestError } from "../../lib/api.ts";
 import { mutations, refreshTree, treeQuery } from "../../lib/queries.ts";
 
@@ -16,6 +18,8 @@ type Target =
   | { kind: "rename-session"; session: SessionNode }
   | { kind: "move-folder"; folder: FolderNode }
   | { kind: "move-session"; session: SessionNode }
+  | { kind: "folder-documents"; folder: FolderNode }
+  | { kind: "split" }
   | { kind: "edit-subject" };
 
 function descendants(folders: FolderNode[], id: string): Set<string> {
@@ -99,6 +103,10 @@ export function SubjectPage() {
               { label: "Move subject to the trash", danger: true, onSelect: () => trash("subject", subject.id, subject.title) },
             ]}
           />
+          <button type="button" className="btn btn-secondary" onClick={() => setTarget({ kind: "split" })}>
+            <Scissors size={16} strokeWidth={1.75} aria-hidden />
+            Split a book
+          </button>
           <button type="button" className="btn btn-primary" onClick={() => setTarget({ kind: "new-session", folderId: null })}>
             <Plus size={16} strokeWidth={1.75} aria-hidden />
             Create session
@@ -122,7 +130,8 @@ export function SubjectPage() {
         </Stat>
       </ul>
 
-      <section className="panel rise mt-6 p-4 sm:p-5" style={{ "--i": 5 } as CSSProperties} aria-labelledby="contents-title">
+      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <section className="panel rise min-w-0 p-4 sm:p-5" style={{ "--i": 5 } as CSSProperties} aria-labelledby="contents-title">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 id="contents-title" className="text-lg leading-6 font-medium">
             Contents
@@ -162,6 +171,7 @@ export function SubjectPage() {
             folderMenu={(f, index, count) => [
               { label: "New session here", onSelect: () => setTarget({ kind: "new-session", folderId: f.id }) },
               { label: "New folder inside", onSelect: () => setTarget({ kind: "new-folder", parentId: f.id }) },
+              { label: "Documents in this folder", onSelect: () => setTarget({ kind: "folder-documents", folder: f }) },
               { label: "Rename", onSelect: () => setTarget({ kind: "rename-folder", folder: f }) },
               { label: "Move to…", onSelect: () => setTarget({ kind: "move-folder", folder: f }) },
               { label: "Move up", disabled: index === 0, onSelect: () => reorder("folder", f.id, index - 1) },
@@ -185,8 +195,35 @@ export function SubjectPage() {
           </div>
         )}
       </section>
+      <div className="rise" style={{ "--i": 6 } as CSSProperties}>
+        <DocumentsPanel
+          title="Subject documents"
+          hint="Shared by every session, like a whole book or the syllabus. Chapter PDFs go in their sessions."
+          subjectId={subjectId}
+          target={{}}
+          documents={tree.documents.filter((d) => !d.folderId && !d.sessionId)}
+        />
+      </div>
+      </div>
 
       {/* Dialogs */}
+      <SplitBookDialog open={target?.kind === "split"} onClose={close} tree={tree} />
+      <Dialog
+        open={target?.kind === "folder-documents"}
+        onClose={close}
+        title={target?.kind === "folder-documents" ? `Documents in “${target.folder.title}”` : "Documents"}
+        width={520}
+      >
+        {target?.kind === "folder-documents" ? (
+          <DocumentsPanel
+            title="Folder documents"
+            hint="Used by every session inside this folder."
+            subjectId={subjectId}
+            target={{ folderId: target.folder.id }}
+            documents={tree.documents.filter((d) => d.folderId === target.folder.id)}
+          />
+        ) : null}
+      </Dialog>
       <SubjectDialog
         open={target?.kind === "edit-subject"}
         onClose={close}

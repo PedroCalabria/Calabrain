@@ -99,7 +99,10 @@ export interface DocumentNode {
   sessionId: string | null;
   title: string;
   status: "processing" | "ready" | "failed";
+  failureReason: string | null;
   pageCount: number | null;
+  /** Set on chapter documents split from a book. */
+  parentDocumentId: string | null;
 }
 
 export interface SubjectTree {

@@ -27,6 +27,13 @@ const schema = z.object({
   MAIL_FROM: z.string().default("Calabrain <no-reply@calabrain.local>"),
   /** "smtp" sends for real; "memory" keeps messages in an in-process outbox (tests). */
   MAIL_TRANSPORT: z.enum(["smtp", "memory"]).default("smtp"),
+
+  S3_ENDPOINT: z.url(),
+  S3_REGION: z.string().default("auto"),
+  S3_BUCKET: z.string().min(1),
+  S3_ACCESS_KEY_ID: z.string().min(1),
+  S3_SECRET_ACCESS_KEY: z.string().min(1),
+  S3_FORCE_PATH_STYLE: bool,
 });
 
 const parsed = schema.safeParse(process.env);

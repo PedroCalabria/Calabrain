@@ -2,7 +2,7 @@ import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
   dialect: "postgresql",
-  schema: "./src/db/schema.ts",
+  schema: "./src/schema.ts",
   out: "./drizzle",
   casing: "snake_case",
   dbCredentials: { url: process.env.DATABASE_URL ?? "postgres://calabrain:calabrain@localhost:5432/calabrain" },

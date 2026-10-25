@@ -30,8 +30,11 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # S3-compatible test server for uploads and document jobs.
+      - run: pip install "moto[server]" && (moto_server -H 127.0.0.1 -p 9100 > /tmp/moto.log 2>&1 &)
       - run: pnpm typecheck
       - run: pnpm test
         env:
           TEST_DATABASE_URL: postgres://calabrain:calabrain@localhost:5432/calabrain_test
+          TEST_WORKER_DATABASE_URL: postgres://calabrain:calabrain@localhost:5432/calabrain_worker_test
       - run: pnpm --filter @calabrain/web build

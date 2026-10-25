@@ -138,7 +138,9 @@ export async function subjectRoutes(app: FastifyInstance) {
           sessionId: sourceDocuments.sessionId,
           title: sourceDocuments.title,
           status: sourceDocuments.status,
+          failureReason: sourceDocuments.failureReason,
           pageCount: sourceDocuments.pageCount,
+          parentDocumentId: sourceDocuments.parentDocumentId,
         })
         .from(sourceDocuments)
         .where(and(eq(sourceDocuments.subjectId, id), isNull(sourceDocuments.deletedAt)))
