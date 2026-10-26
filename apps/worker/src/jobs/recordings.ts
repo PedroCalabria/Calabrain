@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { schema } from "@calabrain/db";
 import { eq } from "drizzle-orm";
-import { extractAudio, MediaError, playbackPlan, probe, thumbnail, toMp4 } from "../media.ts";
+import { conversionTimeoutMs, extractAudio, MediaError, playbackPlan, probe, thumbnail, toMp4 } from "../media.ts";
 import type { Deps } from "./documents.ts";
 
 const { recordings, attempts, studySessions, subjects, usageLedger } = schema;
@@ -51,7 +51,7 @@ export async function processRecording({ db, storage }: Deps, recordingId: strin
     if (plan !== "keep") {
       playPath = join(dir, "play.mp4");
       try {
-        await toMp4(src, playPath, plan, !!info.video);
+        await toMp4(src, playPath, plan, !!info.video, conversionTimeoutMs(info.durationS));
       } catch {
         return fail("unsupported");
       }
@@ -64,7 +64,7 @@ export async function processRecording({ db, storage }: Deps, recordingId: strin
     const audioPath = join(dir, "audio.ogg");
     let hasAudio = false;
     if (info.audio) {
-      await extractAudio(src, audioPath);
+      await extractAudio(src, audioPath, conversionTimeoutMs(info.durationS));
       await storage.upload(audioKey, audioPath, "audio/ogg");
       hasAudio = true;
     }

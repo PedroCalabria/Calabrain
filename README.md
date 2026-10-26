@@ -54,21 +54,9 @@ Adicione também uma regra de ciclo de vida que aborta uploads multipart incompl
 
 ## Deploy
 
-**API e worker na VPS** (Docker Compose), **web no Cloudflare Pages**, **arquivos no R2**.
+Passo a passo completo para uma VPS com CloudPanel (como a da Hostinger, ao lado de um WordPress), com ou sem domínio próprio: **[docs/deploy-vps.md](docs/deploy-vps.md)**.
 
-1. **Servidor**: clone o repositório na VPS, copie `.env.example` para `.env` e preencha para produção:
-   - `NODE_ENV=production`, `POSTGRES_PASSWORD` (só letras e números, porque entra na URL do banco), `AUTH_SECRET` (`openssl rand -base64 32`);
-   - `API_URL=https://api.seu-dominio` e `WEB_URL=https://app.seu-dominio` (os dois no mesmo domínio, para o cookie de sessão funcionar);
-   - SMTP do provedor de e-mail e `MAIL_FROM`;
-   - as variáveis `S3_*` do R2 (veja "Armazenamento de arquivos").
-2. Suba tudo: `docker compose -f docker-compose.prod.yml up -d --build`. A API aplica as migrações ao iniciar e escuta só em `127.0.0.1:3000`.
-3. **Proxy reverso com HTTPS** para `api.seu-dominio` → `http://127.0.0.1:3000` (no CloudPanel: *Add Site → Reverse Proxy*). Para os status em tempo real, desligue o buffering em `/events`:
-   ```nginx
-   location /events { proxy_pass http://127.0.0.1:3000; proxy_buffering off; proxy_read_timeout 1h; }
-   ```
-   Aumente também o limite de corpo só se for usar uploads pela API (não é o caso: os arquivos vão direto ao R2).
-4. **Web no Cloudflare Pages**: conecte o repositório, comando de build `pnpm --filter @calabrain/web build`, pasta de saída `apps/web/dist`, variável `VITE_API_URL=https://api.seu-dominio` e domínio `app.seu-dominio`. O arquivo `_redirects` já manda todas as rotas para o app.
-5. **Atualizar**: `git pull && docker compose -f docker-compose.prod.yml up -d --build`.
+Resumo: API, worker e Postgres rodam em Docker na VPS (`docker-compose.prod.yml`, API só em `127.0.0.1:3000`, atrás de um proxy reverso com HTTPS); o app é estático e fica num site do CloudPanel ou no Cloudflare Pages; os arquivos ficam no R2. O worker tem limite de CPU para não deixar os outros sites lentos durante uma conversão. Para atualizar: `./scripts/deploy.sh`.
 
 **Backup**: o worker roda `pg_dump` todo dia às 04:07 (horário de Brasília) e guarda no bucket em `backups/`, mantendo os 14 mais recentes. Para restaurar: baixe o arquivo do R2 e rode `gunzip -c calabrain-<data>.sql.gz | docker compose -f docker-compose.prod.yml exec -T postgres psql -U calabrain calabrain`.
 

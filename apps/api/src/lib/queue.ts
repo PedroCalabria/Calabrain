@@ -15,9 +15,26 @@ async function start(): Promise<PgBoss> {
   return b;
 }
 
+/**
+ * pg-boss gives up on a job after 15 minutes by default and runs it again. Conversions on a
+ * one-core VPS can take longer than the recording itself, so heavy jobs get more time.
+ */
+const expireInSeconds: Partial<Record<(typeof jobs)[keyof typeof jobs], number>> = {
+  [jobs.processRecording]: 4 * 60 * 60,
+  [jobs.processDocument]: 60 * 60,
+  [jobs.splitDocument]: 60 * 60,
+  [jobs.importNote]: 30 * 60,
+};
+
 export async function enqueue(name: (typeof jobs)[keyof typeof jobs], data: object, opts: { singletonKey?: string } = {}) {
   const b = boss ?? (await (starting ??= start()));
-  await b.send(name, data, { retryLimit: 3, retryDelay: 30, retryBackoff: true, ...opts });
+  await b.send(name, data, {
+    retryLimit: 3,
+    retryDelay: 30,
+    retryBackoff: true,
+    ...(expireInSeconds[name] ? { expireInSeconds: expireInSeconds[name] } : {}),
+    ...opts,
+  });
 }
 
 export async function stopQueue() {

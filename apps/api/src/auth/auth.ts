@@ -30,6 +30,7 @@ export const auth = betterAuth({
   verification: { modelName: "auth_verifications" },
   emailAndPassword: {
     enabled: true,
+    disableSignUp: !env.SIGNUP_ENABLED,
     minPasswordLength: PASSWORD_MIN,
     maxPasswordLength: PASSWORD_MAX,
     autoSignIn: true,
