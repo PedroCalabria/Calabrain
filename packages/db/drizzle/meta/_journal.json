@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792959337262,
+      "tag": "0000_phase1_base",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792967072950,
+      "tag": "0001_uploads_file_info",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792967920632,
+      "tag": "0002_notes_import_status",
+      "breakpoints": true
+    }
+  ]
+}

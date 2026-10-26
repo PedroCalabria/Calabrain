@@ -5,7 +5,19 @@ import { ZodError } from "zod";
 import { env } from "./env.ts";
 import { HttpError } from "./lib/errors.ts";
 import { authHandlerRoutes } from "./routes/auth-handler.ts";
+import { documentRoutes } from "./routes/documents.ts";
+import { eventRoutes } from "./routes/events.ts";
+import { folderRoutes } from "./routes/folders.ts";
 import { meRoutes } from "./routes/me.ts";
+import { noteRoutes } from "./routes/notes.ts";
+import { recordingRoutes } from "./routes/recordings.ts";
+import { sessionRoutes } from "./routes/sessions.ts";
+import { subjectRoutes } from "./routes/subjects.ts";
+import { trashRoutes } from "./routes/trash.ts";
+import { uploadRoutes } from "./routes/uploads.ts";
+import { usageRoutes } from "./routes/usage.ts";
+import { stopEvents } from "./lib/events.ts";
+import { stopQueue } from "./lib/queue.ts";
 
 export async function buildApp(opts: FastifyServerOptions = {}) {
   const app = Fastify({ trustProxy: true, ...opts });
@@ -48,6 +60,18 @@ export async function buildApp(opts: FastifyServerOptions = {}) {
   app.get("/health", async () => ({ ok: true }));
   await app.register(authHandlerRoutes);
   await app.register(meRoutes);
+  await app.register(subjectRoutes);
+  await app.register(folderRoutes);
+  await app.register(sessionRoutes);
+  await app.register(trashRoutes);
+  await app.register(uploadRoutes);
+  await app.register(documentRoutes);
+  await app.register(noteRoutes);
+  await app.register(recordingRoutes);
+  await app.register(eventRoutes);
+  await app.register(usageRoutes);
+  app.addHook("onClose", stopQueue);
+  app.addHook("onClose", stopEvents);
 
   return app;
 }

@@ -6,15 +6,27 @@
   "scripts": {
     "dev": "tsx watch --clear-screen=false src/index.ts",
     "start": "tsx src/index.ts",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@calabrain/db": "workspace:*",
+    "@calabrain/editor": "workspace:*",
     "@calabrain/shared": "workspace:*",
+    "@calabrain/storage": "workspace:*",
+    "drizzle-orm": "0.45.4",
+    "mammoth": "1.13.0",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "6.3.289",
+    "pg": "8.23.1",
     "pg-boss": "12.38.0"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
     "tsx": "4.23.15",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "5.0.5",
+    "@types/pg": "8.23.1",
+    "@aws-sdk/client-s3": "3.1156.0"
   }
 }

@@ -30,8 +30,29 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Install ffmpeg and pg_dump
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg postgresql-client
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # S3-compatible test server for uploads and document jobs.
+      - name: Start S3 test server
+        run: |
+          pip install "moto[server]"
+          nohup python -m moto.server -H 127.0.0.1 -p 9100 > /tmp/moto.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:9100/ > /dev/null && exit 0; sleep 1; done
+          cat /tmp/moto.log; exit 1
       - run: pnpm typecheck
-      - run: pnpm test
+      - name: Test
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee /tmp/test.log
         env:
           TEST_DATABASE_URL: postgres://calabrain:calabrain@localhost:5432/calabrain_test
+          TEST_WORKER_DATABASE_URL: postgres://calabrain:calabrain@localhost:5432/calabrain_worker_test
       - run: pnpm --filter @calabrain/web build
+      - name: Report test failures
+        if: failure()
+        run: |
+          grep -E "FAIL|AssertionError|Error:|×" /tmp/test.log | head -40 | while IFS= read -r line; do echo "::error::${line//%/%25}"; done
+

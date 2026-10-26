@@ -3,13 +3,35 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
+  lazyRouteComponent,
+  notFound,
   Outlet,
   redirect,
 } from "@tanstack/react-router";
+import { ApiRequestError } from "./lib/api.ts";
+import {
+  attemptsQuery,
+  documentQuery,
+  noteQuery,
+  notesQuery,
+  recordingsQuery,
+  sessionNotesQuery,
+  sessionQuery,
+  subjectsQuery,
+  trashQuery,
+  treeQuery,
+} from "./lib/queries.ts";
 import { meQuery } from "./lib/session.ts";
 import { AppLayout } from "./routes/app/AppLayout.tsx";
+import { NotePage } from "./routes/app/NotePage.tsx";
+import { Notes } from "./routes/app/Notes.tsx";
 import { Overview } from "./routes/app/Overview.tsx";
+import { Recordings } from "./routes/app/Recordings.tsx";
+import { SessionPage } from "./routes/app/SessionPage.tsx";
 import { Settings } from "./routes/app/Settings.tsx";
+import { SubjectPage } from "./routes/app/SubjectPage.tsx";
+import { Subjects } from "./routes/app/Subjects.tsx";
+import { Trash } from "./routes/app/Trash.tsx";
 import { Upcoming } from "./routes/app/Upcoming.tsx";
 import { ForgotPassword } from "./routes/auth/ForgotPassword.tsx";
 import { ResetPassword } from "./routes/auth/ResetPassword.tsx";
@@ -75,7 +97,87 @@ const appRoute = createRoute({
   component: AppLayout,
 });
 
-const overviewRoute = createRoute({ getParentRoute: () => appRoute, path: "/", component: Overview });
+/** A 404 from the API (missing, deleted or someone else's) shows the not-found page. */
+async function load<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof ApiRequestError && err.status === 404) throw notFound();
+    throw err;
+  }
+}
+
+const overviewRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/",
+  loader: ({ context }) => context.queryClient.ensureQueryData(subjectsQuery),
+  component: Overview,
+});
+const subjectsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/subjects",
+  loader: ({ context }) => context.queryClient.ensureQueryData(subjectsQuery),
+  component: Subjects,
+});
+const subjectRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/subjects/$subjectId",
+  loader: ({ context, params }) => load(() => context.queryClient.ensureQueryData(treeQuery(params.subjectId))),
+  component: SubjectPage,
+});
+const sessionRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/sessions/$sessionId",
+  validateSearch: (s: Record<string, unknown>): { attempt?: string } =>
+    typeof s.attempt === "string" ? { attempt: s.attempt } : {},
+  loader: ({ context, params }) =>
+    load(async () => {
+      const session = await context.queryClient.ensureQueryData(sessionQuery(params.sessionId));
+      await Promise.all([
+        context.queryClient.ensureQueryData(treeQuery(session.subjectId)),
+        context.queryClient.ensureQueryData(sessionNotesQuery(session.id)),
+        context.queryClient.ensureQueryData(attemptsQuery(session.id)),
+      ]);
+    }),
+  component: SessionPage,
+});
+const documentRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/documents/$documentId",
+  validateSearch: (s: Record<string, unknown>): { page?: number } =>
+    Number(s.page) >= 1 ? { page: Math.floor(Number(s.page)) } : {},
+  loader: ({ context, params }) => load(() => context.queryClient.ensureQueryData(documentQuery(params.documentId))),
+  // The PDF viewer (pdf.js) loads only when a document is opened.
+  component: lazyRouteComponent(() => import("./routes/app/DocumentPage.tsx"), "DocumentPage"),
+});
+const noteRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/notes/$noteId",
+  loader: ({ context, params }) =>
+    load(async () => {
+      const note = await context.queryClient.ensureQueryData(noteQuery(params.noteId));
+      await context.queryClient.ensureQueryData(sessionQuery(note.sessionId));
+    }),
+  component: NotePage,
+});
+const notesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/notes",
+  loader: ({ context }) => context.queryClient.ensureQueryData(notesQuery),
+  component: Notes,
+});
+const recordingsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/recordings",
+  loader: ({ context }) => context.queryClient.ensureQueryData(recordingsQuery),
+  component: Recordings,
+});
+const trashRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/trash",
+  loader: ({ context }) => context.queryClient.ensureQueryData(trashQuery),
+  component: Trash,
+});
 const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: "/settings", component: Settings });
 
 const upcoming = (path: string, title: string, text: string) =>
@@ -87,11 +189,15 @@ const routeTree = rootRoute.addChildren([
   appRoute.addChildren([
     overviewRoute,
     settingsRoute,
-    upcoming("/subjects", "Subjects", "Subjects, folders and sessions arrive in the next update."),
-    upcoming("/notes", "Notes", "Notes arrive after subjects and documents: an editor with versions and imports."),
-    upcoming("/recordings", "Recordings", "Upload your explanations and rewatch them here, after notes."),
+    subjectsRoute,
+    subjectRoute,
+    sessionRoute,
+    documentRoute,
+    noteRoute,
+    notesRoute,
+    recordingsRoute,
+    trashRoute,
     upcoming("/calendar", "Calendar", "Your study calendar comes in a later phase."),
-    upcoming("/trash", "Trash", "Deleted subjects, folders and sessions will wait here for 30 days."),
   ]),
 ]);
 
@@ -100,6 +206,7 @@ export function makeRouter(queryClient: QueryClient) {
     routeTree,
     context: { queryClient },
     defaultPreload: "intent",
+    defaultNotFoundComponent: NotFound,
     scrollRestoration: true,
   });
 }

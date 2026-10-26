@@ -269,6 +269,36 @@
     animation: fade var(--t-enter) var(--ease-out) both;
     animation-delay: calc(var(--i, 0) * var(--stagger));
   }
+  .pulse {
+    animation: pulse 1.4s var(--ease-soft) infinite;
+  }
+  .pop {
+    transform-origin: top right;
+    animation: pop 220ms var(--ease-out) both;
+  }
+  dialog.dialog[open] {
+    animation: pop 220ms var(--ease-out) both;
+    transform-origin: center;
+  }
+  dialog.dialog::backdrop {
+    animation: fade 220ms var(--ease-out) both;
+  }
+  .select-input {
+    appearance: none;
+    height: 36px;
+    padding: 0 32px 0 12px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-raised)
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B635B' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+      no-repeat right 10px center;
+    box-shadow: inset 0 0 0 1px var(--border), var(--shadow-card);
+    color: var(--ink);
+    font: 500 13px/18px var(--font-sans);
+    transition: background-color var(--t-hover) var(--ease-soft);
+  }
+  .select-input:hover {
+    background-color: var(--surface-sunken);
+  }
 }
 
 @keyframes rise {
@@ -279,6 +309,27 @@
   to {
     opacity: 1;
     transform: none;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.7);
   }
 }
 @keyframes fade {
@@ -297,4 +348,148 @@
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* Note editor content (RF09) */
+.note-content {
+  outline: none;
+  min-height: 240px;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--ink);
+  max-width: 72ch;
+}
+.note-content > * + * {
+  margin-top: 8px;
+}
+.note-content h1 {
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 500;
+  margin-top: 20px;
+}
+.note-content h2 {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 500;
+  margin-top: 18px;
+}
+.note-content h3 {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+  margin-top: 14px;
+}
+.note-content > :first-child {
+  margin-top: 0;
+}
+.note-content ul,
+.note-content ol {
+  padding-left: 22px;
+}
+.note-content ul {
+  list-style: disc;
+}
+.note-content ol {
+  list-style: decimal;
+}
+.note-content li::marker {
+  color: var(--ink-muted);
+}
+.note-content li > p {
+  margin: 0;
+}
+.note-content a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.note-content strong {
+  font-weight: 600;
+}
+.note-content blockquote {
+  border-left: 2px solid var(--border-strong);
+  padding-left: 14px;
+  color: var(--ink-muted);
+}
+.note-content pre {
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font: 500 12px/18px var(--font-mono);
+  white-space: pre-wrap;
+}
+.note-content code {
+  font: 500 12px/18px var(--font-mono);
+  background: var(--surface-sunken);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.note-content pre code {
+  background: none;
+  padding: 0;
+}
+.note-content table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  margin: 12px 0;
+}
+.note-content td,
+.note-content th {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  vertical-align: top;
+  text-align: left;
+}
+.note-content th {
+  background: var(--surface-sunken);
+  font-weight: 500;
+}
+.note-content .selectedCell {
+  background: var(--brand-tint);
+}
+.note-content p.is-editor-empty:first-child::before {
+  content: "Start writing…";
+  color: var(--ink-subtle);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.tableWrapper {
+  overflow-x: auto;
+}
+
+/* Player (RF15) */
+.pb-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #fff;
+  flex: none;
+  transition: background-color var(--t-hover) var(--ease-soft);
+}
+.pb-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+input.volume {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+}
+input.volume::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+}
+input.volume::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
 }
