@@ -183,9 +183,11 @@ Teste no navegador: `https://api.calabrain.<IP>.sslip.io/health` deve mostrar `{
 1. *Sites* → *Add Site* → *Create a Static HTML Site*.
 2. Domínio: `calabrain.<IP>.sslip.io`. Usuário do site: `calabrain` (se usar outro nome, ajuste o `WEB_DIR` no `.env`).
 3. *SSL/TLS* → *New Let's Encrypt Certificate*, como no passo 7.
-4. *Vhost*: no `location / { ... }` do bloco 443, deixe a linha `try_files` assim, para as rotas do app (como `/notes/...`) abrirem direto pelo link ou ao recarregar a página:
+4. *Vhost*: o modelo de site estático não tem `location /`. Adicione este bloco logo depois de `index index.html;` e salve. Sem ele, as rotas do app (como `/notes/...`) dão 404 quando abertas por um link ou ao recarregar a página:
    ```nginx
-   try_files $uri $uri/ /index.html;
+   location / {
+     try_files $uri $uri/ /index.html;
+   }
    ```
 5. Gere e publique o app:
    ```bash
