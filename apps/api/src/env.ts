@@ -18,6 +18,11 @@ const schema = z.object({
   API_URL: z.url(),
   WEB_URL: z.url(),
   AUTH_SECRET: z.string().min(32, "AUTH_SECRET must have at least 32 characters"),
+  /** "false" closes sign-up (a personal install: create your account, then turn it off). */
+  SIGNUP_ENABLED: z
+    .enum(["true", "false", ""])
+    .default("true")
+    .transform((v) => v !== "false"),
 
   SMTP_HOST: z.string().default("localhost"),
   SMTP_PORT: z.coerce.number().int().default(1025),

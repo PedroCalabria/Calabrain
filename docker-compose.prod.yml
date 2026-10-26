@@ -1,5 +1,6 @@
-# Production on the VPS: Postgres, API and worker. Files live in Cloudflare R2; the web app on Cloudflare Pages.
-# Put the production values in .env next to this file (see .env.example and the README).
+# Production on the VPS: Postgres, API and worker. Files live in Cloudflare R2.
+# The web app is static: Cloudflare Pages, or the VPS's own web server (Dockerfile target "web").
+# Put the production values in .env next to this file (see .env.example and docs/deploy-vps.md).
 services:
   postgres:
     image: postgres:16-alpine
@@ -32,6 +33,12 @@ services:
     build: { context: ., target: worker }
     restart: unless-stopped
     env_file: .env
+    # The VPS also serves other sites. Converting a video uses all the CPU it gets, so the worker
+    # is capped (WORKER_CPUS, a fraction of the cores) and loses to every other process when they
+    # compete (cpu_shares: 256 against the default 1024). Conversions take longer; the sites stay fast.
+    cpus: ${WORKER_CPUS:-0.75}
+    cpu_shares: 256
+    mem_limit: ${WORKER_MEMORY:-1536m}
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-calabrain}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-calabrain}
     depends_on:

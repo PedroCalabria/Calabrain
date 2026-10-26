@@ -74,22 +74,28 @@ export function playbackPlan(p: Probe, mime: string): "keep" | "remux" | "transc
   return "keep";
 }
 
-export async function toMp4(src: string, dst: string, plan: "remux" | "transcode", hasVideo: boolean) {
+/**
+ * How long a conversion may run. On a small VPS (one shared core) converting an iPhone video
+ * runs slower than real time, so the limit grows with the recording: 5 s per second, at least 30 min.
+ */
+export const conversionTimeoutMs = (durationS: number) => Math.max(30 * 60, Math.ceil(durationS) * 5) * 1000;
+
+export async function toMp4(src: string, dst: string, plan: "remux" | "transcode", hasVideo: boolean, timeoutMs?: number) {
   const common = ["-y", "-i", src, "-map", "0:v:0?", "-map", "0:a:0?", "-movflags", "+faststart"];
   if (!hasVideo) {
-    await run("ffmpeg", ["-y", "-i", src, "-vn", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", dst]);
+    await run("ffmpeg", ["-y", "-i", src, "-vn", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", dst], timeoutMs);
     return;
   }
   const codecs =
     plan === "remux"
       ? ["-c", "copy"]
       : ["-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", "-vf", "scale='min(1920,iw)':-2", "-c:a", "aac", "-b:a", "128k"];
-  await run("ffmpeg", [...common, ...codecs, dst]);
+  await run("ffmpeg", [...common, ...codecs, dst], timeoutMs);
 }
 
 /** Mono 16 kHz Opus: what transcription needs in phase 2, at a tenth of the size. */
-export async function extractAudio(src: string, dst: string) {
-  await run("ffmpeg", ["-y", "-i", src, "-vn", "-ac", "1", "-ar", "16000", "-c:a", "libopus", "-b:a", "24k", dst]);
+export async function extractAudio(src: string, dst: string, timeoutMs?: number) {
+  await run("ffmpeg", ["-y", "-i", src, "-vn", "-ac", "1", "-ar", "16000", "-c:a", "libopus", "-b:a", "24k", dst], timeoutMs);
 }
 
 export async function thumbnail(src: string, dst: string, atS: number) {

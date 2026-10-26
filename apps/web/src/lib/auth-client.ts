@@ -16,6 +16,7 @@ const messages: Record<string, string> = {
   PASSWORD_TOO_LONG: "Use at most 128 characters.",
   INVALID_TOKEN: "This reset link has expired or was already used. Ask for a new one.",
   INVALID_EMAIL: "Enter a valid e-mail address.",
+  EMAIL_PASSWORD_SIGN_UP_DISABLED: "New accounts are closed on this Calabrain.",
 };
 
 export function authErrorMessage(error: { code?: string | undefined; message?: string | undefined; status?: number }): string {
