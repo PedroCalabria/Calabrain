@@ -189,6 +189,7 @@ Teste no navegador: `https://api.calabrain.<IP>.sslip.io/health` deve mostrar `{
      try_files $uri $uri/ /index.html;
    }
    ```
+   (Até a versão de 26/10/2026, o leitor de PDF precisava também de um bloco para arquivos `.mjs`; o build atual gera só `.js`, que o modelo do CloudPanel já serve certo.)
 5. Gere e publique o app:
    ```bash
    cd /opt/calabrain
